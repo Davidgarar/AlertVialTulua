@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Registrar -- Alert Vial Tulua</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+<body>
+    <div class = "container">
+        <h1>Alert Vial Tulua</h1>
+        <h2>Registrar</h2>
+
+        <form action="{{ url_for('registrar') }}" method="post">
+        <div class="username">
+            <input type="text" name="nombre" required>
+            <label>Nombre de usuario</label>
+        </div>  
+
+        <div class="email">
+
+            <input type="text" name="correo" required>
+            <label>Correo Electrónico</label>
+        </div>  
+
+        <div class="password">
+            <input type="password" name="contrasena" required>
+            <label>Contraseña</label>
+        </div>
+
+        <div class="city">
+            <input type="text" name="ciudad" required>
+            <label>Ciudad</label>
+        </div>
+
+        <input type="submit" value="Registrar">
+        <div class="registrar"> 
+            ¿Ya tienes una cuenta? <a href="/">Inicia Sesión</a> 
+        </div>
+    </form>
+
+
+    </div>
+</body>
+
+
+
+
+</html>

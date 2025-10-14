@@ -1,0 +1,123 @@
+/* --- Estilos generales --- */
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #4a90e2, #7b4397);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* --- Contenedor principal --- */
+.container {
+  background: white;
+  padding: 40px 30px;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  width: 320px;
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+h2 {
+  margin-bottom: 30px;
+  color: #555;
+  font-weight: 500;
+}
+
+/* --- Campos de entrada --- */
+.username,
+.password,
+.email,
+.confirmar-password,
+.city {
+  position: relative;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #adadad;
+}
+
+.username input,
+.password input,
+.email input,
+.confirmar-password input,
+.city input {
+  width: 100%;
+  padding: 0 5px;
+  height: 40px;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  background: none;
+}
+
+/* --- Etiquetas flotantes --- */
+.username label,
+.password label,
+.email label,
+.confirmar-password label,
+.city label {
+  position: absolute;
+  top: 50%;
+  left: 5px;
+  color: #adadad;
+  transform: translateY(-50%);
+  font-size: 16px;
+  pointer-events: none;
+  transition: 0.3s ease;
+}
+
+.username input:focus ~ label,
+.username input:valid ~ label,
+.password input:focus ~ label,
+.password input:valid ~ label,
+.email input:focus ~ label,
+.email input:valid ~ label,
+.confirmar-password input:focus ~ label,
+.confirmar-password input:valid ~ label,
+.city input:focus ~ label,
+.city input:valid ~ label {
+  top: -5px;
+  font-size: 12px;
+  color: #4a90e2;
+}
+
+/* --- Botón principal --- */
+input[type="submit"] {
+  width: 100%;
+  height: 40px;
+  border: none;
+  background: #4a90e2;
+  color: white;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+input[type="submit"]:hover {
+  background: #7b4397;
+}
+
+/* --- Texto inferior (registrar/iniciar sesión) --- */
+.registrar {
+  margin-top: 20px;
+  font-size: 14px;
+  color: #555;
+}
+
+.registrar a {
+  color: #4a90e2;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.registrar a:hover {
+  color: #7b4397;
+}

@@ -1,0 +1,124 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: Arial, sans-serif;
+  background-color: #ffffff;
+}
+
+/* Barra superior */
+.topbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 64px;
+  background-color: #262950;
+  color: white;
+}
+
+.logo {
+  position: absolute;
+  left: 20px;
+  height: 70px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.logout {
+  position: absolute;
+  right: 20px;
+  color: white;
+  text-decoration: none;
+}
+
+.logout:hover {
+  text-decoration: underline;
+}
+
+/* Contenido principal */
+.content {
+  padding: 24px;
+  text-align: center;
+}
+
+#map {
+  height: 400px;
+  width: 80%;
+  max-width: 800px;
+  margin: 20px auto;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* Cuadro de dirección */
+#address-info {
+  margin: 10px auto;
+  width: 80%;
+  max-width: 800px;
+  padding: 10px;
+  background: #f3f3f3;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  text-align: center;
+}
+
+/* Formulario */
+#report-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+#report-form input,
+#report-form textarea {
+  width: 80%;
+  max-width: 800px;
+  padding: 12px 16px;
+  border-radius: 25px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  outline: none;
+  transition: 0.2s;
+}
+
+#report-form input:focus,
+#report-form textarea:focus {
+  border-color: #262950;
+  box-shadow: 0 0 4px rgba(38, 41, 80, 0.5);
+}
+
+/* Área de texto más grande */
+#report-form textarea {
+  height: 100px;
+  resize: none;
+  border-radius: 20px;
+}
+
+
+.btn-report {
+  background-color: #007bff; /* azul */
+  color: white;
+  border: none;
+  border-radius: 25px; /* redondeado */
+  padding: 10px 25px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-report:hover {
+  background-color: #0056b3; /* azul más oscuro al pasar el mouse */
+}

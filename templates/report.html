@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Alert Vial</title>
+
+  <!-- CSS principal -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+
+  <!-- Leaflet Geosearch -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-geosearch@3.8.0/dist/geosearch.css"
+  />
+</head>
+
+<body>
+  <!-- Barra superior -->
+  <header class="topbar">
+    <img src="/img/logo.png" alt="Logo de Alert Vial" class="logo">
+
+    <div class="title">Reporte</div>
+    <a href="/logout" class="logout">Cerrar sesión</a>
+  </header>
+
+  <!-- Contenido principal -->
+  <main class="content">
+    <h2>Mapa de Alert Vial</h2>
+    <div id="map"></div>
+
+    
+    <div id="address-info" contenteditable="true">
+  Selecciona una ubicación o busca una dirección.
+</div>
+
+    <form id="report-form">
+
+      <input type="time" id="hora" name="hora" placeholder="Hora" required>
+
+      <input type="text" id="severidad" name="severidad" placeholder="Severidad (ej. Alta, Media, Baja)" required>
+
+      <textarea id="descripcion" name="descripcion" placeholder="Descripción del incidente..." required></textarea>
+      <button type="submit" class="btn-report">Reportar</button>
+    </form>
+  </main>
+
+  
+
+  <!-- Librerías -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet-geosearch@3.8.0/dist/geosearch.umd.js"></script>
+
+  <!-- Script local -->
+  <script src="{{ url_for('static', filename='map.js') }}"></script>
+</body>
+</html>

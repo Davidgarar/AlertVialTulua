@@ -78,3 +78,29 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
+
+  // ==========================
+  // Mapa de Calor de Accidentes
+  // ==========================
+
+  // 🔹 Coordenadas de ejemplo (Tuluá y alrededores)
+  
+  const puntosAccidentes = [
+    [4.0847, -76.1954, 0.7],  // Centro
+    [4.0862, -76.1975, 0.8],  // Norte
+    [4.0825, -76.1923, 0.9],  // Sur
+    [4.0890, -76.1931, 0.6],  // Zona oriental
+    [4.0810, -76.1982, 1.0]   // Zona occidental
+  ];
+
+  // 🔹 Crear capa de calor
+  const heatmap = L.heatLayer(puntosAccidentes, {
+    radius: 25,      // tamaño de cada punto de calor
+    blur: 15,        // suavizado
+    maxZoom: 17,     // zoom máximo visible
+    gradient: {      // colores de intensidad
+      0.4: "blue",
+      0.65: "lime",
+      1: "red"
+    }
+  }).addTo(map);

@@ -121,3 +121,37 @@ input[type="submit"]:hover {
 .registrar a:hover {
   color: #7b4397;
 }
+/* --- Botón de inicio con Google --- */
+.btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* espacio entre logo y texto */
+  background-color: #fff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: 5px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.btn-google:hover {
+  background-color: #f8f9fa;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  transform: translateY(-1px);
+}
+
+/* --- Icono de Google --- */
+.google-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+
+

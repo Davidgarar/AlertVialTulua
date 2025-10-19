@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alert Vial Tuluá</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  
+</head>
+<body>
+  <div class="container"> 
+    <h1>Alert Vial Tuluá</h1>
+    <h2>Alerta Vial Enviada</h2>
+    <p>Su alerta vial ha sido enviada exitosamente. ¡Gracias por contribuir a la seguridad vial!</p>
+    <a href="{{ url_for('reportar') }}" class="btn-reportar">📢 Reportar incidente</a>
+
+  </div>
+ 
+</body>
+</html>

@@ -13,29 +13,31 @@
         <h1>Alert Vial Tulua</h1>
         <h2>Registrar</h2>
 
-        <form action="{{ url_for('registrar') }}" method="post">
+        <form id="form" action="{{ url_for('registrar') }}" method="post">
         <div class="username">
-            <input type="text" name="nombre" required>
+            <input type="text" name="nombre" id="name" required>
             <label>Nombre de usuario</label>
         </div>  
 
         <div class="email">
-
-            <input type="text" name="correo" required>
+            <input type="text" name="correo" id="email" required>
             <label>Correo Electrónico</label>
         </div>  
 
         <div class="password">
-            <input type="password" name="contrasena" required>
+            <input type="password" name="contrasena" id="password" required>
             <label>Contraseña</label>
         </div>
 
         <div class="city">
-            <input type="text" name="ciudad" required>
+            <input type="text" name="ciudad" id="city" required>
             <label>Ciudad</label>
         </div>
 
         <input type="submit" value="Registrar">
+
+        <p id="warnings" style="color: red; text-align: center; margin-top: 10px;"></p>
+        
         <div class="registrar"> 
             ¿Ya tienes una cuenta? <a href="/">Inicia Sesión</a> 
         </div>
@@ -43,9 +45,8 @@
 
 
     </div>
+    <script src="{{ url_for('static', filename='js/register.js') }}"></script>
+
 </body>
 
-
-
-
-</html>
+</html>  

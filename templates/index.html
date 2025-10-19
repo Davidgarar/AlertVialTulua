@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+
 <html lang="en"> 
 <head>
     <meta charset="UTF-8">
@@ -14,12 +14,12 @@
         <h2>Iniciar Sesión</h2>
         <form method="post">
             <div class = "username">
-                <input type="text" required>
+                <input type="text" name="correo" required>
                 <label> Usuario</label>
             </div>
 
             <div class = "password">
-                <input type = "text" required>
+                <input type = "text" name="contrasena" required>
                 <label> Contraseña </label>
             </div>
 
@@ -27,8 +27,17 @@
             <input type = "submit" value = "Iniciar Sesión">
             <div class = "registrar"> 
                 ¿No tienes una cuenta? <a href="{{ url_for('register') }}">Regístrate</a> 
+
+            </div>
+            <div>
+                <a href="{{ url_for('google.login') }}" class="btn-google"> 
+                    <img src="{{ url_for('static', filename='img/google.png') }}" alt="Google Icon" class="google-icon">
+                    <span> Iniciar sesión con Google</span>
+                </a>
+            </div>
       
 
+            
         </form>
     </div>
 

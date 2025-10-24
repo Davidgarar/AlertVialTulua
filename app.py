@@ -1,7 +1,7 @@
-
 from flask import Flask, flash, render_template, request, redirect, url_for, session
 from flask_dance.contrib.google import make_google_blueprint, google
 from dotenv import load_dotenv
+from security import encrypt_password, verify_password
 
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1' 
@@ -35,11 +35,12 @@ google_bp = make_google_blueprint(
 )   
 app.register_blueprint(google_bp, url_prefix="/google_login")
 
+# Ruta para iniciar sesión con Google
 @app.route('/login_google')
 def login_google():
     return redirect(url_for("google.login"))
 
-
+# Ruta principal
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -51,14 +52,21 @@ def index():
                 cur.execute("SELECT contrasena FROM usuarios WHERE correo = %s", (correo,))
                 user = cur.fetchone()
 
-            if user is None:
-                flash('El usuario no existe', 'error')
-            elif user[0] == contrasena:
+            if user and verify_password(user[0], contrasena):
                 session['user'] = correo
                 flash('Inicio de sesión exitoso', 'success')
                 return redirect(url_for('alertv'))
             else:
-                flash('Contraseña incorrecta', 'error')
+                flash('Correo o contraseña incorrectos', 'error')
+                    
+            # if user is None:
+            #     flash('El usuario no existe', 'error')
+            # elif verify_password(contrasena, user[0]):
+            #     session['user'] = correo
+            #     flash('Inicio de sesión exitoso', 'success')
+            #     return redirect(url_for('alertv'))
+            # else:
+            #     flash('Contraseña incorrecta', 'error')
 
         except psycopg2.Error as e:
             print("Error al consultar la base de datos:", e)
@@ -66,7 +74,7 @@ def index():
 
     return render_template('index.html')
 
-
+# Ruta para el login tradicional
 @app.route("/login", methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -91,18 +99,19 @@ def login():
             return "Credenciales inválidas. Por favor, intenta de nuevo."
     return render_template('login.html')
 
-
+# Ruta para la página de alerta después del login
 @app.route('/alertv')
 def alertv():
     if 'user' not in session:
         return redirect(url_for('index'))
     return render_template('alertv.html', user=session['user'])
 
-
+# Ruta para la página de registro
 @app.route('/register')
 def register():
     return render_template('register.html')
 
+# Ruta de callback para Google OAuth
 @app.route('/google_login/callback')
 def google_login_callback():
    
@@ -146,7 +155,7 @@ def google_login_callback():
     return redirect(url_for('alertv'))
 
 
-
+# Ruta para registrar un nuevo usuario
 @app.route('/registrar', methods=['POST'])
 def registrar():
     try:
@@ -156,9 +165,10 @@ def registrar():
         ciudad = request.form['ciudad']
 
         with conn.cursor() as cur:
+            contrasena_hash = encrypt_password(contrasena)
             cur.execute(
                 "INSERT INTO usuarios (nombre_usuario, correo, contrasena, ciudad) VALUES (%s, %s, %s, %s)",
-                (nombre, correo, contrasena, ciudad)
+                (nombre, correo, contrasena_hash, ciudad)
             )
         conn.commit()
         return redirect('/')
@@ -166,7 +176,8 @@ def registrar():
         conn.rollback()
         print("Error al insertar datos:", e)
         return "Ocurrió un error al registrar el usuario."
-    
+
+# Ruta para la página de reporte  
 @app.route('/reportar')
 def reportar():
     # Verificamos si el usuario está logueado
@@ -175,7 +186,7 @@ def reportar():
     return render_template('report.html')
 
     
-
+# Ruta para cerrar sesión
 @app.route('/logout')
 def logout():
     session.pop('user', None)  # elimina al usuario de la sesión
@@ -184,7 +195,7 @@ def logout():
 
 
 
-
+# Ejecutar la aplicación
 if __name__ == '__main__':
     app.run(debug=True)    
 

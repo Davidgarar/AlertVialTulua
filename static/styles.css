@@ -1,124 +1,146 @@
-/* Reset */
-* {
+/* ===== Estilos generales ===== */
+body {
+  font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  background: #f5f5f5;
 }
 
-html, body {
-  height: 100%;
-  font-family: Arial, sans-serif;
-  background-color: #ffffff;
-}
-
-/* Barra superior */
+/* ===== Barra superior ===== */
 .topbar {
-  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 64px;
+  justify-content: space-between;
   background-color: #262950;
   color: white;
+  padding: 10px 20px;
 }
 
-.logo {
+.left-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar .logo {
+  height: 50px;
+}
+
+.topbar .title {
   position: absolute;
-  left: 20px;
-  height: 70px;
-}
-
-.title {
-  font-size: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.5em;
   font-weight: bold;
 }
-
-.logout {
-  position: absolute;
-  right: 20px;
-  color: white;
-  text-decoration: none;
-}
-
-.logout:hover {
+/* ===== Enlace de cerrar sesión ===== */
+.logout-link {
+  color: #fff;
   text-decoration: underline;
+  font-size: 1em;
+  transition: color 0.2s;
 }
 
-/* Contenido principal */
+.logout-link:hover {
+  color: #ffdd57;
+}
+
+/* ===== Contenido ===== */
 .content {
-  padding: 24px;
-  text-align: center;
+  padding: 20px;
 }
 
-#map {
-  height: 400px;
-  width: 80%;
-  max-width: 800px;
-  margin: 20px auto;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+h2 {
+  margin-top: 0;
+  color: #004aad;
 }
 
-/* Cuadro de dirección */
-#address-info {
-  margin: 10px auto;
-  width: 80%;
-  max-width: 800px;
+/* ===== Barra de búsqueda ===== */
+.search-box {
+  width: 100%;
+  max-width: 500px;
   padding: 10px;
-  background: #f3f3f3;
-  border-radius: 8px;
+  font-size: 1em;
+  border-radius: 5px;
   border: 1px solid #ccc;
-  font-size: 15px;
-  text-align: center;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Formulario */
+/* ===== Mapa ===== */
+#map {
+  height: 500px;
+  width: 100%;
+  border-radius: 10px;
+  margin-top: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+/* ===== Información de dirección ===== */
+#address-info {
+  margin-top: 10px;
+  background: #e9ecef;
+  padding: 10px;
+  border-radius: 5px;
+  min-height: 40px;
+}
+
+/* ===== Formulario de reporte ===== */
+
 #report-form {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin-top: 20px;
+  gap: 15px;
+  width: 100%;                /* ocupará todo el ancho del address-info */
+  margin-top: 10px;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
 }
 
+
+/* Campos de texto e inputs */
 #report-form input,
 #report-form textarea {
-  width: 80%;
-  max-width: 800px;
-  padding: 12px 16px;
-  border-radius: 25px;
+  font-size: 1.05em;
+  padding: 12px 16px;       /* más cómodos */
   border: 1px solid #ccc;
-  font-size: 15px;
+  border-radius: 14px;
   outline: none;
-  transition: 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 #report-form input:focus,
 #report-form textarea:focus {
-  border-color: #262950;
-  box-shadow: 0 0 4px rgba(38, 41, 80, 0.5);
+  border-color: #004aad;
+  box-shadow: 0 0 6px rgba(0, 74, 173, 0.3);
 }
 
-/* Área de texto más grande */
+/* Textarea más espacioso */
 #report-form textarea {
-  height: 100px;
-  resize: none;
-  border-radius: 20px;
+  resize: vertical;
+  height: 110px;
 }
 
-
+/* Botón */
 .btn-report {
-  background-color: #007bff; /* azul */
+  background-color: #004aad;
   color: white;
   border: none;
-  border-radius: 25px; /* redondeado */
-  padding: 10px 25px;
-  font-size: 16px;
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 1.05em;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.25s, transform 0.1s;
 }
 
 .btn-report:hover {
-  background-color: #0056b3; /* azul más oscuro al pasar el mouse */
+  background-color: #003b8a;
+  transform: scale(1.03);
+}
+
+.btn-report:active {
+  transform: scale(0.98);
 }

@@ -1,106 +1,74 @@
-document.addEventListener("DOMContentLoaded", function () {
-  // Crear mapa centrado en Tuluá
-  const map = L.map("map").setView([4.0847, -76.1954], 13);
+let map, marker, geocoder, autocomplete;
 
-  // Capa base de OpenStreetMap
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "© OpenStreetMap contributors"
-  }).addTo(map);
+function initMap() {
+  const defaultLocation = { lat: 4.7110, lng: -74.0721 }; // Bogotá
 
-  // Proveedor de búsqueda
-  const provider = new window.GeoSearch.OpenStreetMapProvider();
-
-  // Control de búsqueda
-  const searchControl = new window.GeoSearch.GeoSearchControl({
-    provider: provider,
-    style: "bar",
-    showMarker: true,
-    showPopup: true,
-    marker: {
-      icon: new L.Icon.Default(),
-      draggable: false,
-    },
-    retainZoomLevel: false,
-    animateZoom: true,
-    autoClose: true,
-    searchLabel: "Buscar dirección..."
+  // Crear mapa
+  map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 12,
+    center: defaultLocation,
   });
 
-  map.addControl(searchControl);
+  geocoder = new google.maps.Geocoder();
 
-  // Referencia al div donde se mostrará la dirección
-  const infoDiv = document.getElementById("address-info");
-  let marker;
-
-  // Cuando el usuario selecciona una ubicación del buscador
-  map.on("geosearch/showlocation", function (result) {
-    const location = result.location;
-    infoDiv.innerText = `Dirección seleccionada: ${location.label}`;
+  // Crear marcador
+  marker = new google.maps.Marker({
+    position: defaultLocation,
+    map: map,
+    draggable: true,
+    title: "Ubicación seleccionada"
   });
 
-  // Cuando el usuario hace clic en el mapa
-  map.on("click", async function (e) {
-    const { lat, lng } = e.latlng;
+  // Mostrar dirección inicial
+  getAddress(defaultLocation);
 
-    if (marker) {
-      map.removeLayer(marker);
-    }
-
-    marker = L.marker([lat, lng]).addTo(map);
-
-    // Petición a OpenStreetMap (reverse geocoding)
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
-      );
-      const data = await response.json();
-
-      if (data.display_name) {
-        infoDiv.innerText = `Dirección seleccionada: ${data.display_name}`;
-        marker.bindPopup(data.display_name).openPopup();
-      } else {
-        infoDiv.innerText = `Coordenadas seleccionadas: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-      }
-    } catch (error) {
-      console.error("Error al obtener dirección:", error);
-      infoDiv.innerText = `Coordenadas seleccionadas: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-    }
+  // Evento al hacer clic en el mapa
+  map.addListener("click", (event) => {
+    const clickedLocation = event.latLng;
+    marker.setPosition(clickedLocation);
+    getAddress(clickedLocation);
   });
 
-  // Centrar en ubicación actual si está disponible
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(pos => {
-      const { latitude, longitude } = pos.coords;
-      map.setView([latitude, longitude], 14);
-      marker = L.marker([latitude, longitude]).addTo(map)
-        .bindPopup("Tu ubicación actual").openPopup();
-    });
-  }
-});
+  // Evento al mover el marcador manualmente
+  marker.addListener("dragend", () => {
+    const pos = marker.getPosition();
+    getAddress(pos);
+  });
 
-  // ==========================
-  // Mapa de Calor de Accidentes
-  // ==========================
+  // Activar el autocompletado en la barra de búsqueda
+  const input = document.getElementById("search-input");
+  autocomplete = new google.maps.places.Autocomplete(input);
+  autocomplete.bindTo("bounds", map);
 
-  // 🔹 Coordenadas de ejemplo (Tuluá y alrededores)
-  
-  const puntosAccidentes = [
-    [4.0847, -76.1954, 0.7],  // Centro
-    [4.0862, -76.1975, 0.8],  // Norte
-    [4.0825, -76.1923, 0.9],  // Sur
-    [4.0890, -76.1931, 0.6],  // Zona oriental
-    [4.0810, -76.1982, 1.0]   // Zona occidental
-  ];
-
-  // 🔹 Crear capa de calor
-  const heatmap = L.heatLayer(puntosAccidentes, {
-    radius: 25,      // tamaño de cada punto de calor
-    blur: 15,        // suavizado
-    maxZoom: 17,     // zoom máximo visible
-    gradient: {      // colores de intensidad
-      0.4: "blue",
-      0.65: "lime",
-      1: "red"
+  // Cuando el usuario selecciona una dirección
+  autocomplete.addListener("place_changed", () => {
+    const place = autocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) {
+      alert("No se encontró información para esta dirección.");
+      return;
     }
-  }).addTo(map);
+
+    // Mover el mapa al lugar seleccionado
+    map.panTo(place.geometry.location);
+    map.setZoom(15);
+
+    // Mover el marcador
+    marker.setPosition(place.geometry.location);
+
+    // Mostrar la dirección
+    document.getElementById("address-info").innerText = place.formatted_address || place.name;
+  });
+}
+
+// Función para obtener dirección a partir de coordenadas
+function getAddress(latlng) {
+  geocoder.geocode({ location: latlng }, (results, status) => {
+    if (status === "OK" && results[0]) {
+      document.getElementById("address-info").innerText = results[0].formatted_address;
+    } else {
+      document.getElementById("address-info").innerText = "No se pudo obtener la dirección.";
+    }
+  });
+}
+
+window.onload = initMap;

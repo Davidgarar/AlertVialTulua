@@ -8,59 +8,47 @@
   <!-- CSS principal -->
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
-  <!-- Leaflet -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    crossorigin=""
-  />
-
-  <!-- Leaflet Geosearch -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet-geosearch@3.8.0/dist/geosearch.css"
-  />
+  <!-- Google Maps con librería Places -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGuzlSWeHrkxHu1PjR_DVRTjkNkQxd2gg&libraries=places"></script>
 </head>
 
 <body>
   <!-- Barra superior -->
   <header class="topbar">
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="logo">
-
-    <div class="title">Reporte</div>
-    <a href="/logout" class="logout">Cerrar sesión</a>
+    <div class="left-section">
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="logo">
+      <div class="title">Reporte</div>
+    </div>
+    <nav class="nav-links">
+      <a href="/logout" class="logout-link">Cerrar sesión</a>
+    </nav>
   </header>
 
   <!-- Contenido principal -->
   <main class="content">
     <h2>Mapa de Alert Vial</h2>
+
+    <!-- Barra de búsqueda -->
+    <input id="search-input" class="search-box" type="text" placeholder="Buscar dirección...">
+
+    <!-- Mapa -->
     <div id="map"></div>
 
-    
+    <!-- Información de dirección -->
     <div id="address-info" contenteditable="true">
-  Selecciona una ubicación o busca una dirección.
-</div>
+      Selecciona una ubicación o busca una dirección.
+    </div>
 
+    <!-- Formulario -->
     <form id="report-form">
-
       <input type="time" id="hora" name="hora" placeholder="Hora" required>
-
       <input type="text" id="severidad" name="severidad" placeholder="Severidad (ej. Alta, Media, Baja)" required>
-
       <textarea id="descripcion" name="descripcion" placeholder="Descripción del incidente..." required></textarea>
       <button type="submit" class="btn-report">Reportar</button>
     </form>
   </main>
 
-  
-
-  <!-- Librerías -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="https://unpkg.com/leaflet-geosearch@3.8.0/dist/geosearch.umd.js"></script>
-  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-
-
-  <!-- Script local -->
+  <!-- Script del mapa -->
   <script src="{{ url_for('static', filename='map.js') }}"></script>
 </body>
 </html>

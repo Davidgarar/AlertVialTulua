@@ -1,7 +1,9 @@
-from flask import Flask, flash, render_template, request, redirect, url_for, session
+from flask import Flask, flash, render_template, request, redirect, url_for, session, jsonify
 from flask_dance.contrib.google import make_google_blueprint, google
 from dotenv import load_dotenv
 from security import encrypt_password, verify_password
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1' 
@@ -193,6 +195,85 @@ def logout():
     flash("Has cerrado sesión correctamente.", "info")
     return redirect(url_for('index'))
 
+#configuración de Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USERNAME'] = os.getenv('EMAIL_USER')
+app.config['MAIL_PASSWORD'] = os.getenv('EMAIL_PASS')
+app.config['MAIL_USE_TLS'] = True
+
+
+mail = Mail(app)    
+s = URLSafeTimedSerializer(app.secret_key)  
+
+#ruta para solicitar restablecimiento de contraseña
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['correo']
+        
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM usuarios WHERE correo = %s", (email,))
+            user = cur.fetchone()
+
+            if user:
+                token = s.dumps(email, salt='password-recovery')
+                link = url_for('reset_password', token=token, _external=True)
+
+                msg = Message("Restablecimiento de contraseña", sender=app.config['MAIL_USERNAME'], recipients=[email])
+                msg.body = f'Para restablecer su contraseña, haga clic en el siguiente enlace: {link}'
+                mail.send(msg)
+                flash("Se ha enviado un correo electrónico para restablecer la contraseña.", "info")
+                
+            else:
+                flash("El correo electrónico no está registrado.", "error") 
+    return render_template('forgot_password.html')
+
+
+#ruta para restablecer la contraseña
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):  
+    try:
+        email = s.loads(token, salt='password-recovery', max_age=3600)
+    except SignatureExpired:
+        flash("El enlace para restablecer la contraseña ha expirado.", "error")
+        return redirect(url_for('forgot_password'))
+    except BadSignature:
+        flash("El enlace para restablecer la contraseña no es válido.", "error")
+        return redirect(url_for('forgot_password'))
+
+    if request.method == 'POST':
+        # CAMBIADO: Usar los nombres del HTML actual
+        new_password = request.form['nueva_contrasena']
+        confirm_password = request.form['confirmar_contrasena']
+        
+        # Validar que las contraseñas coincidan
+        if new_password != confirm_password:
+            flash("Las contraseñas no coinciden.", "error")
+            return render_template('reset_password.html')
+        
+        hashed_password = encrypt_password(new_password)
+
+        with conn.cursor() as cur:
+            cur.execute("UPDATE usuarios SET contrasena = %s WHERE correo = %s", (hashed_password, email))
+        conn.commit()
+        flash("Su contraseña ha sido restablecida exitosamente.", "success")
+        return redirect(url_for('index'))  # Cambié a 'login' en vez de 'index'
+
+    return render_template('reset_password.html')
+
+@app.route('/heatmap')
+def heatmap():
+    return render_template('heatmap.html')
+
+
+@app.route('/api/accidentes')
+def api_accidentes():
+    with conn.cursor() as cur:
+        cur.execute("SELECT latitud, longitud FROM accidentes")
+        data = cur.fetchall()
+    # Devuelve los puntos en formato JSON
+    return jsonify(data)
 
 
 # Ejecutar la aplicación

@@ -23,17 +23,22 @@
                 <label> Contraseña </label>
             </div>
 
-            <div class = "recordar">  <a href="#">¿Olvido su contraseña?</a> </div>
-            <input type = "submit" value = "Iniciar Sesión">
-            <div class = "registrar"> 
-                ¿No tienes una cuenta? <a href="{{ url_for('register') }}">Regístrate</a> 
-
+            <div class="recordar">
+            <a href="{{ url_for('forgot_password') }}">¿Olvidó su contraseña?</a>
             </div>
+
+            <input type = "submit" value = "Iniciar Sesión">
+
             <div>
                 <a href="{{ url_for('google.login') }}" class="btn-google"> 
                     <img src="{{ url_for('static', filename='img/google.png') }}" alt="Google Icon" class="google-icon">
                     <span> Iniciar sesión con Google</span>
                 </a>
+            </div>
+
+            <div class = "registrar"> 
+                ¿No tienes una cuenta? <a href="{{ url_for('register') }}">Regístrate</a> 
+
             </div>
       
 

@@ -17,7 +17,7 @@ body {
   padding: 40px 30px;
   border-radius: 20px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  width: 330px;
+  width: 340px;
   text-align: center;
   border: 2px solid transparent;
   transition: 0.3s ease;
@@ -161,6 +161,46 @@ input[type="submit"]:hover {
   width: 20px;
   height: 20px;
   object-fit: contain;
+}
+
+
+/* --- Botones --- */
+a.btn-reportar,
+a.btn-heatmap {
+  display: block;
+  width: 100%;
+  padding: 14px 0;
+  margin: 10px 0;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
+/* --- Botón Reportar --- */
+a.btn-reportar {
+  background: linear-gradient(135deg, #ff4d4d, #ff7f50);
+  color: white;
+}
+
+a.btn-reportar:hover {
+  background: linear-gradient(135deg, #ff3333, #ff6600);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(255,100,80,0.3);
+}
+
+/* --- Botón Heatmap --- */
+a.btn-heatmap {
+  background: linear-gradient(135deg, #4a90e2, #007aff);
+  color: white;
+}
+
+a.btn-heatmap:hover {
+  background: linear-gradient(135deg, #357ae8, #0056b3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,120,255,0.3);
 }
 
 

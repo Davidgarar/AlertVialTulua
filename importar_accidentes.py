@@ -16,40 +16,63 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
-# Leer archivo CSV
 with open('Accidentalidad_Vehicular_en_el_Municipio_de_Tuluá_20251023.csv', 'r', encoding='utf-8') as f:
     reader = csv.DictReader(f, delimiter=',', quotechar='"')
     count = 0
     for row in reader:
         try:
-            # Extraer coordenadas (columna tiene un espacio al final)
-            coords = row['Cordenada Geografica '].strip()
-            match = re.search(r'POINT\s*\(([-\d\.]+)\s+([-\d\.]+)\)', coords)
-            if not match:
-                continue
+            ano_str = row.get("AÑO", "").strip()
+            ano = int(ano_str.replace(",", "")) if ano_str.replace(",", "").isdigit() else None
 
-            lon, lat = float(match.group(1)), float(match.group(2))
+            fecha_str = row.get("FECHA", "").strip()
+            dia = row.get("DIA", "").strip()
+            hora = row.get("HORA", "").strip()
+            area = row.get("AREA", "").strip()
+            direccion = row.get("DIRECCION HECHO", "").strip()
+            controles = row.get("CONTROLES DE TRANSITO", "").strip()
+            barrio = row.get("BARRIO HECHO", "").strip()
+            clase_accidente = row.get("CLASE DE ACCIDENTE", "").strip()
+            clase_servicio = row.get("CLASE DE SERVICIO", "").strip()
+            gravedad = row.get("GRAVEDAD DEL ACCIDENTE", "").strip()
+            clase_vehiculo = row.get("CLASE DE VEHICULO", "").strip()
 
-            # Extraer fecha
-            fecha_str = row['FECHA']
+            # Fecha segura
             try:
                 fecha = datetime.strptime(fecha_str, "%Y/%m/%d")
             except:
                 fecha = None
 
-            # Tipo de accidente
-            tipo = row['CLASE DE ACCIDENTE'].strip().capitalize()
+            # Coordenadas
+            coords = row.get("Cordenada Geografica ", "").strip()
+            latitud = None
+            longitud = None
+            match = re.search(r'POINT\s*\(([-\d\.]+)\s+([-\d\.]+)\)', coords)
+            if match:
+                longitud = float(match.group(1))
+                latitud = float(match.group(2))
 
-            # Insertar datos
+            # Insert individual
             cur.execute("""
-                INSERT INTO accidentes (latitud, longitud, fecha, tipo)
-                VALUES (%s, %s, %s, %s)
-            """, (lat, lon, fecha, tipo))
-            count += 1
-        except Exception as e:
-            print("Error en fila:", e)
+                INSERT INTO accidentes_completa (
+                    ano, fecha, dia, hora, area, direccion_hecho, 
+                    controles_transito, barrio_hecho, clase_accidente, 
+                    clase_servicio, gravedad_accidente, clase_vehiculo,
+                    latitud, longitud
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                ano, fecha, dia, hora, area, direccion, controles, barrio,
+                clase_accidente, clase_servicio, gravedad, clase_vehiculo,
+                latitud, longitud
+            ))
 
-conn.commit()
+            conn.commit()
+            count += 1
+
+        except Exception as e:
+            print(f"❌ Error en fila: {e}")
+            conn.rollback()  # limpia la transacción para continuar
+
 cur.close()
 conn.close()
 

@@ -270,7 +270,7 @@ def heatmap():
 @app.route('/api/accidentes')
 def api_accidentes():
     with conn.cursor() as cur:
-        cur.execute("SELECT latitud, longitud FROM accidentes")
+        cur.execute("SELECT latitud, longitud FROM accidentes_completa WHERE latitud IS NOT NULL AND longitud IS NOT NULL")
         data = cur.fetchall()
     # Devuelve los puntos en formato JSON
     return jsonify(data)

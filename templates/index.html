@@ -12,10 +12,20 @@
     <div class = "container">
         <h1>Alert Vial Tulua</h1>
         <h2>Iniciar Sesión</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}  
         <form method="post">
             <div class = "username">
                 <input type="text" name="correo" required>
-                <label> Usuario</label>
+                <label> Correo</label>
             </div>
 
             <div class = "password">
@@ -45,7 +55,7 @@
             
         </form>
     </div>
-
+    
 </body>
     
 

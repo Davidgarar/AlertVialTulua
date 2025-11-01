@@ -19,10 +19,22 @@ form.addEventListener('submit', e => {
         warnings += "El correo no es válido <br>";
         entrar = true;
     }
-    if (contrasena.value.length < 8) {
-        warnings += "La contraseña no es válida <br>";
+    
+    // VALIDACIÓN MEJORADA DE CONTRASEÑA
+    const password = contrasena.value;
+    if (password.length < 8) {
+        warnings += "La contraseña debe tener al menos 8 caracteres <br>";
         entrar = true;
     }
+    if (!/[a-zA-Z]/.test(password)) {
+        warnings += "La contraseña debe contener al menos una letra <br>";
+        entrar = true;
+    }
+    if (!/\d/.test(password)) {
+        warnings += "La contraseña debe contener al menos un número <br>";
+        entrar = true;
+    }
+    
     if (ciudad.value.length < 3) {
         warnings += "La ciudad no es válida <br>";
         entrar = true;

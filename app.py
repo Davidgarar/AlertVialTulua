@@ -43,7 +43,7 @@ app.register_blueprint(google_bp, url_prefix="/google_login")
 def login_google():
     return redirect(url_for("google.login"))
 
-# Ruta principal
+## Ruta principal (login)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -61,15 +61,6 @@ def index():
                 return redirect(url_for('alertv'))
             else:
                 flash('Correo o contraseña incorrectos', 'error')
-                    
-            # if user is None:
-            #     flash('El usuario no existe', 'error')
-            # elif verify_password(contrasena, user[0]):
-            #     session['user'] = correo
-            #     flash('Inicio de sesión exitoso', 'success')
-            #     return redirect(url_for('alertv'))
-            # else:
-            #     flash('Contraseña incorrecta', 'error')
 
         except psycopg2.Error as e:
             print("Error al consultar la base de datos:", e)
@@ -77,30 +68,7 @@ def index():
 
     return render_template('index.html')
 
-# Ruta para el login tradicional
-@app.route("/login", methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        correo = request.form['correo']
-        contrasena = request.form['contrasena']
 
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT * FROM usuarios WHERE correo = %s AND contrasena = %s",
-                    (correo, contrasena)
-                )
-                user = cur.fetchone()
-        except psycopg2.Error as e:
-            print("Error al consultar usuario:", e)
-            return "Ocurrió un error en el login."
-
-        if user:
-            session['user'] = {'nombre': user[1], 'email': user[2]}  # Ajusta los índices según tu tabla
-            return redirect(url_for('alertv'))
-        else:
-            return "Credenciales inválidas. Por favor, intenta de nuevo."
-    return render_template('login.html')
 
 # Ruta para la página de alerta después del login
 @app.route('/alertv')

@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from security import encrypt_password, verify_password
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from geopy.geocoders import Nominatim
 
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1' 
@@ -186,6 +187,95 @@ def reportar():
     if 'user' not in session:
         return redirect(url_for('index'))
     return render_template('report.html')
+
+@app.route('/procesar', methods=['POST'])
+def procesar():
+    geolocator = Nominatim(user_agent="geoapi")
+
+    # Obtener datos del formulario
+    anio = request.form.get('anio')
+    fecha = request.form.get('fecha')
+    dia = request.form.get('dia')
+    hora = request.form.get('hora')
+    area = request.form.get('area')
+    barrio = request.form.get('barrio')
+    claseAccidente = request.form.get('claseAccidente')
+    claseServicio = request.form.get('claseServicio')
+    gravedadAccidente = request.form.get('gravedadAccidente')
+    claseVehiculo = request.form.get('claseVehiculo')
+    direccion = request.form.get('direccionInfo')
+    controles = request.form.get('controles', 'NINGUNO')
+
+    accion = request.form.get('accion')
+
+    if accion == 'reportar':
+        # Obtener coordenadas con geopy
+        ubicacion = geolocator.geocode(direccion)
+        if ubicacion:
+            latitud = ubicacion.latitude
+            longitud = ubicacion.longitude
+        else:
+            latitud = None
+            longitud = None
+            flash("⚠️ No se pudo obtener la ubicación de la dirección.", "warning")
+
+        try:
+            # Conversión de fecha a formato TIMESTAMP (YYYY-MM-DD HH:MM:SS)
+            # Si el campo `fecha` solo tiene día, usa hora vacía.
+            from datetime import datetime
+            try:
+                fecha_timestamp = datetime.strptime(fecha, "%Y-%m-%d")
+            except ValueError:
+                fecha_timestamp = datetime.now()
+
+            # Insertar en la tabla
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO accidentes_completa (
+                        ano,
+                        fecha,
+                        dia,
+                        hora,
+                        area,
+                        direccion_hecho,
+                        controles_transito,
+                        barrio_hecho,
+                        clase_accidente,
+                        clase_servicio,
+                        gravedad_accidente,
+                        clase_vehiculo,
+                        latitud,
+                        longitud
+                    ) VALUES (
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    )
+                """, (
+                    int(anio),                # ano INTEGER
+                    fecha_timestamp,     # fecha TIMESTAMP
+                    dia,                 # dia VARCHAR(20)
+                    hora,                # hora VARCHAR(10)
+                    area,                # area VARCHAR(100)
+                    direccion,           # direccion_hecho TEXT
+                    controles,           # controles_transito VARCHAR(100)
+                    barrio,              # barrio_hecho VARCHAR(100)
+                    claseAccidente,      # clase_accidente VARCHAR(100)
+                    claseServicio,   # clase_servicio VARCHAR(100)
+                    gravedadAccidente,   # gravedad_accidente VARCHAR(100)
+                    claseVehiculo,       # clase_vehiculo VARCHAR(100)
+                    latitud,             # latitud DOUBLE PRECISION
+                    longitud             # longitud DOUBLE PRECISION
+                ))
+            conn.commit()
+            flash("✅ Accidente reportado correctamente.", "success")
+        except Exception as e:
+            conn.rollback()
+            print("❌ Error al insertar accidente:", e)
+            flash("Ocurrió un error al guardar el reporte.", "error")
+
+        return redirect('/reportar')
+
+    # Si no se presionó "reportar", vuelve al inicio
+    return redirect('/')
 
     
 # Ruta para cerrar sesión

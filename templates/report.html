@@ -29,7 +29,7 @@
     <h2>Mapa de Alert Vial</h2>
 
     <!-- Barra de búsqueda -->
-    <input id="search-input" class="search-box" type="text" placeholder="Buscar dirección...">
+    <input id="search-input" name="direccion" class="search-box" type="text" placeholder="Buscar dirección...">
 
     <!-- Mapa -->
     <div id="map"></div>
@@ -40,15 +40,60 @@
     </div>
 
     <!-- Formulario -->
-    <form id="report-form">
+    <form id="report-form" action="/procesar" method="POST">
+      <input type="number" id="anio" name="anio" placeholder="Año" required>
+      <input type="date" id="fecha" name="fecha" placeholder="Fecha" required>
+
+      <select id="dia" name="dia" required>
+        <option value="" disabled selected>Selecciona un día</option>
+        <option>Lunes</option>
+        <option>Martes</option>
+        <option>Miércoles</option>
+        <option>Jueves</option>
+        <option>Viernes</option>
+        <option>Sábado</option>
+        <option>Domingo</option>
+      </select>
+
       <input type="time" id="hora" name="hora" placeholder="Hora" required>
-      <input type="text" id="severidad" name="severidad" placeholder="Severidad (ej. Alta, Media, Baja)" required>
-      <textarea id="descripcion" name="descripcion" placeholder="Descripción del incidente..." required></textarea>
-      <button type="submit" class="btn-report">Reportar</button>
+      <input type="text" id="area" name="area" placeholder="Área" required>
+      <input type="text" id="barrio" name="barrio" placeholder="Barrio" required>
+      <input type="text" id="claseAccidente" name="claseAccidente" placeholder="Clase de accidente (Choque, atropello, etc)" required>
+
+      <select id="claseServicio" name="claseServicio" required>
+        <option value="" disabled selected>Seleccione la clase de servicio</option>
+        <option value="Particular">Particular</option>
+        <option value="Público">Público</option>
+      </select>
+
+      <select id="gravedadAccidente" name="gravedadAccidente" required>
+        <option value="" disabled selected>Seleccione gravedad</option>
+        <option value="Con heridos">Con heridos</option>
+        <option value="Con muertos">Con muertos</option>
+        <option value="Solo daños">Solo daños</option>
+      </select>
+
+      <input type="text" id="claseVehiculo" name="claseVehiculo" placeholder="Clase de vehículo (Carro, moto, etc)" required>
+
+      <!-- Campos ocultos para dirección y coordenadas -->
+      <input type="hidden" id="direccionInfo" name="direccionInfo">
+
+      
+      <button type="submit" name="accion" value="reportar" class="btn-report">Reportar</button>
     </form>
   </main>
 
   <!-- Script del mapa -->
   <script src="{{ url_for('static', filename='map.js') }}"></script>
+
+  <script>
+  document.getElementById('report-form').addEventListener('submit', function() {
+    // Toma el texto del div address-info
+    const addressText = document.getElementById('address-info').innerText.trim();
+    // Lo copia al input oculto
+    document.getElementById('direccionInfo').value = addressText;
+  });
+</script>
+
 </body>
 </html>

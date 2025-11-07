@@ -5,7 +5,11 @@ from security import encrypt_password, verify_password
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from geopy.geocoders import Nominatim
-
+# AGREGAR ESTOS IMPORTS DESPUÉS DE LOS EXISTENTES
+from data_filters import FiltroAccidentes
+from risk_processor import ProcesadorRiesgo
+from route_calculator import CalculadorRutaSegura
+import json 
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1' 
 
@@ -13,7 +17,8 @@ import psycopg2
 
 app = Flask(__name__)
 app.secret_key = "secretSUPERT_key"
-
+procesador_riesgo = ProcesadorRiesgo()
+calculador_rutas = CalculadorRutaSegura(procesador_riesgo)
 load_dotenv()
 
 # Conexión a PostgreSQL
@@ -333,11 +338,196 @@ def api_accidentes():
     # Devuelve los puntos en formato JSON
     return jsonify(data)
 
+# =================================================================
+# NUEVAS RUTAS PARA PROCESAMIENTO DE RIESGO - SIN AFECTAR EXISTENTES
+# =================================================================
+
+@app.route('/api/riesgo/calcular', methods=['POST'])
+def calcular_riesgo():
+    """Calcular nivel de riesgo en un punto específico"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'lat' not in data or 'lng' not in data:
+            return jsonify({'error': 'Se requieren lat y lng'}), 400
+        
+        filtros = data.get('filtros', {})
+        
+        # Calcular riesgo usando la tabla accidentes_completa que ya tienes
+        riesgo = procesador_riesgo.calcular_riesgo_punto(
+            data['lat'], data['lng'], 'accidentes_completa', filtros, cur, conn
+        )
+        
+        return jsonify({
+            'lat': data['lat'],
+            'lng': data['lng'],
+            'nivel_riesgo': round(riesgo, 3),
+            'radio_metros': procesador_riesgo.radio_zona,
+            'filtros_aplicados': filtros
+        })
+        
+    except Exception as e:
+        print(f"Error en calcular_riesgo: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/riesgo/mapa-calor', methods=['POST'])
+def generar_mapa_calor():
+    """Generar datos para mapa de calor con filtros"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'bounds' not in data:
+            return jsonify({'error': 'Se requieren bounds [lat_min, lng_min, lat_max, lng_max]'}), 400
+        
+        filtros = data.get('filtros', {})
+        resolucion = data.get('resolucion', 0.01)
+        
+        puntos_calor = procesador_riesgo.generar_mapa_calor(
+            data['bounds'], 'accidentes_completa', filtros, resolucion, cur
+        )
+        
+        return jsonify({
+            'puntos_calor': puntos_calor,
+            'total_puntos': len(puntos_calor),
+            'resolucion': resolucion,
+            'filtros_aplicados': filtros
+        })
+        
+    except Exception as e:
+        print(f"Error en generar_mapa_calor: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rutas/calcular', methods=['POST'])
+def calcular_ruta_segura():
+    """Calcular ruta segura entre dos puntos"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'origen' not in data or 'destino' not in data:
+            return jsonify({'error': 'Se requieren origen y destino'}), 400
+        
+        origen = data['origen']  # {'lat': x, 'lng': y}
+        destino = data['destino']  # {'lat': x, 'lng': y}
+        filtros = data.get('filtros', {})
+        
+        ruta = calculador_rutas.calcular_ruta_segura(
+            origen, destino, 'accidentes_completa', filtros, cur
+        )
+        
+        return jsonify(ruta)
+        
+    except Exception as e:
+        print(f"Error en calcular_ruta_segura: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/filtros/aplicar', methods=['POST'])
+def aplicar_filtros():
+    """Aplicar filtros y obtener accidentes filtrados"""
+    try:
+        data = request.get_json()
+        filtros = data.get('filtros', {})
+        
+        filtro_obj = FiltroAccidentes()
+        
+        # Aplicar filtros dinámicamente
+        for key, value in filtros.items():
+            if hasattr(filtro_obj, f'por_{key}'):
+                getattr(filtro_obj, f'por_{key}')(value)
+        
+        # Aplicar filtros a la consulta
+        query = "SELECT * FROM accidentes_completa WHERE 1=1"
+        params = []
+        query, params = filtro_obj.aplicar_sql(query, params)
+        
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            accidentes_filtrados = cur.fetchall()
+        
+        # Obtener nombres de columnas
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'accidentes_completa' ORDER BY ordinal_position")
+        columnas = [col[0] for col in cur.fetchall()]
+        
+        # Convertir a lista de diccionarios
+        accidentes_dict = []
+        for acc in accidentes_filtrados:
+            acc_dict = {}
+            for i, columna in enumerate(columnas):
+                acc_dict[columna] = acc[i]
+            accidentes_dict.append(acc_dict)
+        
+        return jsonify({
+            'total_accidentes': len(accidentes_filtrados),
+            'accidentes': accidentes_dict,
+            'filtros_aplicados': filtros
+        })
+        
+    except Exception as e:
+        print(f"Error en aplicar_filtros: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/estadisticas/riesgo', methods=['GET'])
+def obtener_estadisticas_riesgo():
+    """Obtener estadísticas generales de riesgo"""
+    try:
+        # Puedes aceptar filtros por query parameters
+        filtros = request.args.to_dict()
+        
+        estadisticas = procesador_riesgo.obtener_estadisticas_riesgo('accidentes_completa', filtros, cur)
+        
+        return jsonify(estadisticas)
+        
+    except Exception as e:
+        print(f"Error en obtener_estadisticas_riesgo: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/criterios-riesgo', methods=['GET', 'POST'])
+def gestionar_criterios_riesgo():
+    """Gestionar criterios de riesgo (guardar/recuperar de base de datos)"""
+    try:
+        if request.method == 'POST':
+            data = request.get_json()
+            
+            nombre = data.get('nombre')
+            descripcion = data.get('descripcion', '')
+            parametros = data.get('parametros', {})
+            peso = data.get('peso', 1.0)
+            
+            # Guardar en base de datos
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO criterios_riesgo (nombre, descripcion, parametros, peso, activo)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (nombre) DO UPDATE SET
+                    descripcion = EXCLUDED.descripcion,
+                    parametros = EXCLUDED.parametros,
+                    peso = EXCLUDED.peso,
+                    activo = EXCLUDED.activo
+                """, (nombre, descripcion, json.dumps(parametros), peso, True))
+            conn.commit()
+            
+            return jsonify({'mensaje': 'Criterio guardado exitosamente', 'criterio': data})
+        
+        else:  # GET
+            with conn.cursor() as cur:
+                cur.execute("SELECT nombre, descripcion, parametros, peso FROM criterios_riesgo WHERE activo = TRUE")
+                criterios = cur.fetchall()
+            
+            criterios_dict = []
+            for criterio in criterios:
+                criterios_dict.append({
+                    'nombre': criterio[0],
+                    'descripcion': criterio[1],
+                    'parametros': json.loads(criterio[2]) if criterio[2] else {},
+                    'peso': criterio[3]
+                })
+            
+            return jsonify({'criterios': criterios_dict})
+            
+    except Exception as e:
+        print(f"Error en gestionar_criterios_riesgo: {e}")
+        return jsonify({'error': str(e)}), 500
+
 
 # Ejecutar la aplicación
 if __name__ == '__main__':
-    app.run(debug=True)    
-
-
-
-
+    app.run(debug=True)   

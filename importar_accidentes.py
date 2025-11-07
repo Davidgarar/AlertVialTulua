@@ -16,7 +16,8 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
-with open('Accidentalidad_Vehicular_en_el_Municipio_de_Tuluá_20251023.csv', 'r', encoding='utf-8') as f:
+with open(r"c:\Users\Digital\Desktop\proyecto tl\AlertVialTulua\Accidentalidad_Vehicular_en_el_Municipio_de_Tuluá_20251023.csv", 'r', encoding='utf-8') as f:
+
     reader = csv.DictReader(f, delimiter=',', quotechar='"')
     count = 0
     for row in reader:
@@ -70,10 +71,10 @@ with open('Accidentalidad_Vehicular_en_el_Municipio_de_Tuluá_20251023.csv', 'r'
             count += 1
 
         except Exception as e:
-            print(f"❌ Error en fila: {e}")
+            print(f" Error en fila: {e}")
             conn.rollback()  # limpia la transacción para continuar
 
 cur.close()
 conn.close()
 
-print(f"✅ Datos importados correctamente: {count} registros insertados.")
+print(f" Datos importados correctamente: {count} registros insertados.")

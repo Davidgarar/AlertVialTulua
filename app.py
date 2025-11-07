@@ -10,6 +10,8 @@ from data_filters import FiltroAccidentes
 from risk_processor import ProcesadorRiesgo
 from route_calculator import CalculadorRutaSegura
 import json 
+from datetime import datetime, timedelta
+from export_utils import ExportUtils, PDFGenerator
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1' 
 
@@ -527,7 +529,307 @@ def gestionar_criterios_riesgo():
         print(f"Error en gestionar_criterios_riesgo: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ================================================
+# ENDPOINTS PARA ANALYTICS Y ESTADÍSTICAS
+# ================================================
 
+@app.route('/analytics')
+def analytics():
+    """Página de estadísticas para administradores"""
+    if 'user' not in session:
+        return redirect(url_for('index'))
+    return render_template('analytics.html')
+
+@app.route('/api/analytics/filtros')
+def obtener_filtros_analytics():
+    """Obtener opciones para los filtros"""
+    try:
+        with conn.cursor() as cur:
+            # Obtener zonas únicas
+            cur.execute("SELECT DISTINCT barrio_hecho FROM accidentes_completa WHERE barrio_hecho IS NOT NULL ORDER BY barrio_hecho")
+            zonas = [row[0] for row in cur.fetchall()]
+            
+            # Obtener tipos de accidente únicos
+            cur.execute("SELECT DISTINCT clase_accidente FROM accidentes_completa WHERE clase_accidente IS NOT NULL ORDER BY clase_accidente")
+            tipos_accidente = [row[0] for row in cur.fetchall()]
+            
+        return jsonify({
+            'zonas': zonas,
+            'tipos_accidente': tipos_accidente
+        })
+        
+    except Exception as e:
+        print(f"Error obteniendo filtros: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/analytics/estadisticas', methods=['POST'])
+def obtener_estadisticas():
+    """Obtener estadísticas y gráficos con filtros"""
+    try:
+        data = request.get_json()
+        filtros = data.get('filtros', {})
+        
+        # Construir consulta base
+        query = """
+            SELECT 
+                fecha, hora, barrio_hecho, clase_accidente, gravedad_accidente,
+                latitud, longitud, area, direccion_hecho
+            FROM accidentes_completa 
+            WHERE 1=1
+        """
+        params = []
+        
+        # Aplicar filtros
+        if filtros.get('fecha_inicio'):
+            query += " AND fecha >= %s"
+            params.append(filtros['fecha_inicio'])
+        
+        if filtros.get('fecha_fin'):
+            query += " AND fecha <= %s"
+            params.append(filtros['fecha_fin'])
+        
+        if filtros.get('gravedad'):
+            query += " AND gravedad_accidente = %s"
+            params.append(filtros['gravedad'])
+        
+        if filtros.get('zona'):
+            query += " AND barrio_hecho = %s"
+            params.append(filtros['zona'])
+        
+        if filtros.get('tipo_accidente'):
+            query += " AND clase_accidente = %s"
+            params.append(filtros['tipo_accidente'])
+        
+        if filtros.get('hora'):
+            # Filtrar por rango de horas
+            if filtros['hora'] == 'madrugada':
+                query += " AND (hora < '06:00' OR hora >= '00:00')"
+            elif filtros['hora'] == 'mañana':
+                query += " AND hora BETWEEN '06:00' AND '11:59'"
+            elif filtros['hora'] == 'tarde':
+                query += " AND hora BETWEEN '12:00' AND '17:59'"
+            elif filtros['hora'] == 'noche':
+                query += " AND hora BETWEEN '18:00' AND '23:59'"
+        
+        # Ejecutar consulta
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            datos = cur.fetchall()
+            
+            # Obtener nombres de columnas
+            column_names = [desc[0] for desc in cur.description]
+            
+            # Convertir a lista de diccionarios
+            datos_dict = []
+            for row in datos:
+                datos_dict.append(dict(zip(column_names, row)))
+            
+            # Calcular estadísticas
+            estadisticas = calcular_estadisticas(datos_dict)
+            
+            # Generar datos para gráficos
+            graficos = generar_datos_graficos(datos_dict)
+            
+        return jsonify({
+            'estadisticas': estadisticas,
+            'graficos': graficos,
+            'datos': datos_dict,
+            'total_registros': len(datos_dict)
+        })
+        
+    except Exception as e:
+        print(f"Error obteniendo estadísticas: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/analytics/exportar/csv', methods=['POST'])
+def exportar_csv():
+    """Exportar datos a CSV"""
+    try:
+        data = request.get_json()
+        datos = data.get('datos', [])
+        
+        csv_content = ExportUtils.generar_csv(datos)
+        
+        if not csv_content:
+            return jsonify({'error': 'No hay datos para exportar'}), 400
+        
+        from flask import Response
+        return Response(
+            csv_content,
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment;filename=accidentes_export.csv"}
+        )
+        
+    except Exception as e:
+        print(f"Error exportando CSV: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/analytics/exportar/pdf', methods=['POST'])
+def exportar_pdf():
+    """Exportar reporte a PDF"""
+    try:
+        data = request.get_json()
+        filtros = data.get('filtros', {})
+        datos = data.get('datos', {})
+        
+        pdf_file = PDFGenerator.generar_pdf_simple(datos, filtros, datos.get('estadisticas', {}))
+        
+        from flask import Response
+        return Response(
+            pdf_file.getvalue(),
+            mimetype="application/pdf",
+            headers={"Content-Disposition": "attachment;filename=reporte_accidentes.pdf"}
+        )
+        
+    except Exception as e:
+        print(f"Error exportando PDF: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# ================================================
+# FUNCIONES AUXILIARES PARA ESTADÍSTICAS
+# ================================================
+
+def calcular_estadisticas(datos):
+    """Calcular estadísticas principales desde los datos"""
+    if not datos:
+        return {
+            'total_accidentes': 0,
+            'con_heridos': 0,
+            'con_muertos': 0,
+            'porcentaje_heridos': 0,
+            'porcentaje_muertos': 0,
+            'zona_mas_peligrosa': 'No hay datos suficientes',
+            'max_accidentes_zona': 0
+        }
+    
+    total = len(datos)
+    con_heridos = sum(1 for acc in datos if acc.get('gravedad_accidente') and 'HERIDO' in str(acc['gravedad_accidente']).upper())
+    con_muertos = sum(1 for acc in datos if acc.get('gravedad_accidente') and 'MUERTO' in str(acc['gravedad_accidente']).upper())
+    
+    # Calcular zona más peligrosa - FILTRANDO "NO INFORMA"
+    zonas = {}
+    for acc in datos:
+        zona = acc.get('barrio_hecho')
+        
+        # Filtrar valores no informativos
+        if (zona and 
+            str(zona).strip() != '' and 
+            str(zona).upper() not in ['NO INFORMA', 'NO INFORMA', 'NONE', 'NULL', '', 'NO INFORMADO', 'NO INFORMA'] and
+            not str(zona).startswith('No informa')):
+            
+            zonas[zona] = zonas.get(zona, 0) + 1
+    
+    # Encontrar la zona con más accidentes (que no sea "No informa")
+    zona_mas_peligrosa = 'No informada en la mayoría de casos'
+    max_accidentes_zona = 0
+    
+    if zonas:
+        # Ordenar por cantidad de accidentes y tomar la primera que no sea "No informa"
+        zonas_ordenadas = sorted(zonas.items(), key=lambda x: x[1], reverse=True)
+        
+        for zona, cantidad in zonas_ordenadas:
+            if (zona and 
+                str(zona).strip() != '' and 
+                str(zona).upper() not in ['NO INFORMA', 'NO INFORMA', 'NONE', 'NULL', '', 'NO INFORMADO'] and
+                not str(zona).startswith('No informa')):
+                
+                zona_mas_peligrosa = zona
+                max_accidentes_zona = cantidad
+                break
+    
+    return {
+        'total_accidentes': total,
+        'con_heridos': con_heridos,
+        'con_muertos': con_muertos,
+        'porcentaje_heridos': round((con_heridos / total) * 100, 1) if total > 0 else 0,
+        'porcentaje_muertos': round((con_muertos / total) * 100, 1) if total > 0 else 0,
+        'zona_mas_peligrosa': zona_mas_peligrosa,
+        'max_accidentes_zona': max_accidentes_zona
+    }
+
+def generar_datos_graficos(datos):
+    """Generar datos para los gráficos"""
+    if not datos:
+        return generar_graficos_vacios()
+    
+    # Gráfico por hora
+    horas = [0] * 24
+    for acc in datos:
+        if acc.get('hora'):
+            try:
+                hora = int(acc['hora'].split(':')[0])
+                if 0 <= hora < 24:
+                    horas[hora] += 1
+            except:
+                pass
+    
+    # Gráfico por día de la semana
+    dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    dias = {dia: 0 for dia in dias_semana}
+    for acc in datos:
+        dia = acc.get('dia')
+        if dia and dia in dias:
+            dias[dia] += 1
+    
+    # Gráfico por gravedad
+    gravedades = {'Solo daños': 0, 'Con heridos': 0, 'Con muertos': 0}
+    for acc in datos:
+        gravedad = acc.get('gravedad_accidente', '')
+        if 'HERIDO' in gravedad.upper():
+            gravedades['Con heridos'] += 1
+        elif 'MUERTO' in gravedad.upper():
+            gravedades['Con muertos'] += 1
+        else:
+            gravedades['Solo daños'] += 1
+    
+    # Gráfico por tipo de accidente
+    tipos = {}
+    for acc in datos:
+        tipo = acc.get('clase_accidente')
+        if tipo:
+            tipos[tipo] = tipos.get(tipo, 0) + 1
+    
+    # Gráfico por zona (top 10)
+    zonas = {}
+    for acc in datos:
+        zona = acc.get('barrio_hecho')
+        if zona:
+            zonas[zona] = zonas.get(zona, 0) + 1
+    
+    top_zonas = dict(sorted(zonas.items(), key=lambda x: x[1], reverse=True)[:10])
+    
+    return {
+        'por_hora': {
+            'labels': [f'{h:02d}:00' for h in range(24)],
+            'data': horas
+        },
+        'por_dia': {
+            'labels': dias_semana,
+            'data': [dias[dia] for dia in dias_semana]
+        },
+        'por_gravedad': {
+            'labels': list(gravedades.keys()),
+            'data': list(gravedades.values())
+        },
+        'por_tipo': {
+            'labels': list(tipos.keys()),
+            'data': list(tipos.values())
+        },
+        'por_zona': {
+            'labels': list(top_zonas.keys()),
+            'data': list(top_zonas.values())
+        }
+    }
+
+def generar_graficos_vacios():
+    """Generar estructura de gráficos vacíos"""
+    return {
+        'por_hora': {'labels': [], 'data': []},
+        'por_dia': {'labels': [], 'data': []},
+        'por_gravedad': {'labels': [], 'data': []},
+        'por_tipo': {'labels': [], 'data': []},
+        'por_zona': {'labels': [], 'data': []}
+    }
 # Ejecutar la aplicación
 if __name__ == '__main__':
     app.run(debug=True)   

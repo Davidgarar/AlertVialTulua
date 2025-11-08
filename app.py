@@ -211,7 +211,7 @@ def procesar():
             else:
                 latitud = None
                 longitud = None
-                flash("⚠️ No se pudo obtener la ubicación de la dirección.", "warning")
+                
 
             try:
                 from datetime import datetime

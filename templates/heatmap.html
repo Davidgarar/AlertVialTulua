@@ -188,6 +188,7 @@
     let heatmap;
     let currentCoords = { lat: 4.085, lng: -76.195 };
     let clickMarker = null;
+    let contadorRiesgo = 0;
 
     function initMap(dataPoints) {
       const center = { lat: 4.085, lng: -76.195 };
@@ -196,6 +197,29 @@
         center, 
         mapTypeId: 'roadmap' 
       });
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(pos) {
+
+          const userPos = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          };
+
+          // Centrar el mapa en la ubicación del usuario
+          map.setCenter(userPos);
+
+          // Simular clic para actualizar marcador e información
+          handleMapClick(new google.maps.LatLng(userPos.lat, userPos.lng));
+
+          // Opcional: calcular riesgo automáticamente
+          calcularRiesgo();
+
+        }, function() {
+          console.warn("No se pudo obtener la ubicación del usuario.");
+        });
+      } else {
+        console.warn("Geolocalización no soportada por el navegador.");
+      }
       
       // Crear heatmap con los datos de accidentes
       const heatData = dataPoints.map(p => new google.maps.LatLng(p[0], p[1]));
@@ -372,6 +396,25 @@
           JSON.stringify(data.filtros_aplicados, null, 2) : 
           'Ningún filtro aplicado'}
       `;
+      if (nivelRiesgo > 0.10 && contadorRiesgo === 0) {
+          Swal.fire({
+            title: "⚠️ Zona de Riesgo Elevado",
+            html: `
+              <p style="font-size:16px;">El nivel de riesgo en esta ubicación supera el <strong>10%</strong>.</p>
+              <p style="font-size:14px;">Recomendamos extremar precauciones al transitar por esta zona.</p>
+            `,
+            icon: "warning",
+            confirmButtonText: "Entendido",
+            confirmButtonColor: "#d33",
+            backdrop: `
+              rgba(0,0,0,0.4)
+              left top
+              no-repeat
+            `
+          });
+          contadorRiesgo++;
+        }
+
     }
 
     // Cargar datos de accidentes y inicializar mapa
@@ -383,5 +426,7 @@
         initMap([]); 
       });
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </body>
 </html>

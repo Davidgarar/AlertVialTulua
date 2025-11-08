@@ -40,7 +40,8 @@
     </div>
 
     <!-- Formulario -->
-    <form id="report-form" action="/procesar" method="POST">
+    <form id="report-form" action="/procesar" method="POST" enctype="multipart/form-data">
+
       <input type="number" id="anio" name="anio" placeholder="Año" required>
       <input type="date" id="fecha" name="fecha" placeholder="Fecha" required>
 
@@ -77,6 +78,9 @@
 
       <!-- Campos ocultos para dirección y coordenadas -->
       <input type="hidden" id="direccionInfo" name="direccionInfo">
+
+
+      <input type="file" id="foto" name="foto" accept="image/*" multiple>
 
       
       <button type="submit" name="accion" value="reportar" class="btn-report">Reportar</button>

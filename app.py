@@ -13,6 +13,7 @@ import json
 from datetime import datetime, timedelta
 from export_utils import ExportUtils, PDFGenerator
 import os
+from werkzeug.utils import secure_filename
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1' 
 
 import psycopg2
@@ -163,9 +164,13 @@ def reportar():
         return redirect(url_for('index'))
     return render_template('report.html')
 
+
+UPLOAD_FOLDER = 'static/img'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 @app.route('/procesar', methods=['POST'])
 def procesar():
-    geolocator = Nominatim(user_agent="geoapi")
+    geolocator = Nominatim(user_agent="geoapi", timeout=10)
+
 
     # Obtener datos del formulario
     anio = request.form.get('anio')
@@ -184,73 +189,71 @@ def procesar():
     accion = request.form.get('accion')
 
     if accion == 'reportar':
-        # Obtener coordenadas con geopy
-        ubicacion = geolocator.geocode(direccion)
-        if ubicacion:
-            latitud = ubicacion.latitude
-            longitud = ubicacion.longitude
-        else:
-            latitud = None
-            longitud = None
-            flash("⚠️ No se pudo obtener la ubicación de la dirección.", "warning")
+            # Obtener archivo de foto
+            foto = request.files.get('foto')
 
-        try:
-            # Conversión de fecha a formato TIMESTAMP (YYYY-MM-DD HH:MM:SS)
-            # Si el campo `fecha` solo tiene día, usa hora vacía.
-            from datetime import datetime
+            # Validar que exista foto
+            if not foto or foto.filename == "":
+                flash("Debes adjuntar una foto del accidente.", "warning")
+                return redirect('/reportar')
+
+            # Asegurar nombre seguro para el archivo
+            filename = secure_filename(foto.filename)
+
+            # Guardar archivo en carpeta /static/img
+            foto.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+            # Obtener coordenadas con geopy
+            ubicacion = geolocator.geocode(direccion)
+            if ubicacion:
+                latitud = ubicacion.latitude
+                longitud = ubicacion.longitude
+            else:
+                latitud = None
+                longitud = None
+                flash("⚠️ No se pudo obtener la ubicación de la dirección.", "warning")
+
             try:
-                fecha_timestamp = datetime.strptime(fecha, "%Y-%m-%d")
-            except ValueError:
-                fecha_timestamp = datetime.now()
+                from datetime import datetime
+                try:
+                    fecha_timestamp = datetime.strptime(fecha, "%Y-%m-%d")
+                except ValueError:
+                    fecha_timestamp = datetime.now()
 
-            # Insertar en la tabla
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO accidentes_completa (
-                        ano,
-                        fecha,
-                        dia,
-                        hora,
-                        area,
-                        direccion_hecho,
-                        controles_transito,
-                        barrio_hecho,
-                        clase_accidente,
-                        clase_servicio,
-                        gravedad_accidente,
-                        clase_vehiculo,
-                        latitud,
-                        longitud
-                    ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                    )
-                """, (
-                    int(anio),                # ano INTEGER
-                    fecha_timestamp,     # fecha TIMESTAMP
-                    dia,                 # dia VARCHAR(20)
-                    hora,                # hora VARCHAR(10)
-                    area,                # area VARCHAR(100)
-                    direccion,           # direccion_hecho TEXT
-                    controles,           # controles_transito VARCHAR(100)
-                    barrio,              # barrio_hecho VARCHAR(100)
-                    claseAccidente,      # clase_accidente VARCHAR(100)
-                    claseServicio,   # clase_servicio VARCHAR(100)
-                    gravedadAccidente,   # gravedad_accidente VARCHAR(100)
-                    claseVehiculo,       # clase_vehiculo VARCHAR(100)
-                    latitud,             # latitud DOUBLE PRECISION
-                    longitud             # longitud DOUBLE PRECISION
-                ))
-            conn.commit()
-            flash("✅ Accidente reportado correctamente.", "success")
-        except Exception as e:
-            conn.rollback()
-            print("❌ Error al insertar accidente:", e)
-            flash("Ocurrió un error al guardar el reporte.", "error")
+                with conn.cursor() as cur:
+                    # Insertar accidente y obtener ID generado
+                    cur.execute("""
+                        INSERT INTO accidentes_completa (
+                            ano, fecha, dia, hora, area, direccion_hecho, controles_transito,
+                            barrio_hecho, clase_accidente, clase_servicio, gravedad_accidente,
+                            clase_vehiculo, latitud, longitud
+                        ) VALUES (
+                            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                        ) RETURNING id
+                    """, (
+                        int(anio), fecha_timestamp, dia, hora, area, direccion,
+                        controles, barrio, claseAccidente, claseServicio,
+                        gravedadAccidente, claseVehiculo, latitud, longitud
+                    ))
 
-        return redirect('/reportar')
+                    accidente_id = cur.fetchone()[0]
 
-    # Si no se presionó "reportar", vuelve al inicio
-    return redirect('/')
+                    # Guardar referencia de la foto en su tabla
+                    cur.execute("""
+                        INSERT INTO accidentes_fotos (accidente_id, nombre_archivo)
+                        VALUES (%s, %s)
+                    """, (accidente_id, filename))
+
+                conn.commit()
+                
+
+            except Exception as e:
+                conn.rollback()
+                print("❌ Error:", e)
+                
+
+            return redirect('/reportar')
+
 
     
 # Ruta para cerrar sesión

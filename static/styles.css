@@ -172,3 +172,34 @@ h2 {
   background-position: right 16px center;
   background-size: 18px;
 }
+
+/* Estilo bonito para el botón de subir archivos */
+#foto {
+  font-size: 1.05em;
+  border: none;
+  background: none;
+}
+
+/* Estilo del botón interno del input */
+#foto::file-selector-button {
+  background-color: #004aad;
+  color: white;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 1.05em;
+  cursor: pointer;
+  transition: background-color 0.25s, transform 0.1s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Hover */
+#foto::file-selector-button:hover {
+  background-color: #003b8a;
+  transform: scale(1.03);
+}
+
+/* Click */
+#foto::file-selector-button:active {
+  transform: scale(0.97);
+}

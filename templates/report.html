@@ -5,22 +5,22 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Alert Vial</title>
 
-  <!-- CSS principal -->
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
-  <!-- Google Maps con librería Places -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGuzlSWeHrkxHu1PjR_DVRTjkNkQxd2gg&libraries=places"></script>
 </head>
 
 <body>
-  <!-- Barra superior -->
+
+  <!-- Encabezado -->
   <header class="topbar">
     <div class="left-section">
-      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" class="logo">
-      <div class="title">Reporte</div>
+      <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo de Alert Vial" class="logo">
+      <h1 class="title">Reporte</h1>
     </div>
-    <nav class="nav-links">
-      <a href="/logout" class="logout-link">Cerrar sesión</a>
+
+    <nav class="nav-links" aria-label="Menú principal">
+      <a href="/logout" class="logout-link" tabindex="0">Cerrar sesión</a>
     </nav>
   </header>
 
@@ -28,23 +28,33 @@
   <main class="content">
     <h2>Mapa de Alert Vial</h2>
 
-    <!-- Barra de búsqueda -->
-    <input id="search-input" name="direccion" class="search-box" type="text" placeholder="Buscar dirección...">
 
-    <!-- Mapa -->
-    <div id="map"></div>
+        <!-- Barra de búsqueda -->
+    <div role="search">
+      <label for="search-input">Buscar dirección:</label>
+      <input id="search-input" name="direccion" class="search-box" type="text" placeholder="Buscar dirección..." tabindex="0">
+    </div>
 
-    <!-- Información de dirección -->
-    <div id="address-info" contenteditable="true">
+    <section aria-label="Mapa de ubicación">
+      <div id="map"></div>
+    </section>
+
+    <label for="address-info">Dirección seleccionada:</label>
+    <div id="address-info" contenteditable="true" tabindex="0">
       Selecciona una ubicación o busca una dirección.
     </div>
 
-    <!-- Formulario -->
     <form id="report-form" action="/procesar" method="POST" enctype="multipart/form-data">
 
-      <input type="number" id="anio" name="anio" placeholder="Año" required>
-      <input type="date" id="fecha" name="fecha" placeholder="Fecha" required>
+      <label for="anio">Año:</label>
+      <input type="number" id="anio" name="anio" required>
+      <span class="error-message" id="error-anio"></span>
 
+      <label for="fecha">Fecha:</label>
+      <input type="date" id="fecha" name="fecha" required>
+      <span class="error-message" id="error-fecha"></span>
+
+      <label for="dia">Día:</label>
       <select id="dia" name="dia" required>
         <option value="" disabled selected>Selecciona un día</option>
         <option>Lunes</option>
@@ -55,49 +65,83 @@
         <option>Sábado</option>
         <option>Domingo</option>
       </select>
+      <span class="error-message" id="error-dia"></span>
 
-      <input type="time" id="hora" name="hora" placeholder="Hora" required>
-      <input type="text" id="area" name="area" placeholder="Área" required>
-      <input type="text" id="barrio" name="barrio" placeholder="Barrio" required>
-      <input type="text" id="claseAccidente" name="claseAccidente" placeholder="Clase de accidente (Choque, atropello, etc)" required>
+      <label for="hora">Hora:</label>
+      <input type="time" id="hora" name="hora" required>
+      <span class="error-message" id="error-hora"></span>
 
+      <label for="area">Área:</label>
+      <input type="text" id="area" name="area" required>
+
+      <label for="barrio">Barrio:</label>
+      <input type="text" id="barrio" name="barrio" required>
+
+      <label for="claseAccidente">Clase de accidente:</label>
+      <input type="text" id="claseAccidente" name="claseAccidente" required>
+
+      <label for="claseServicio">Clase de servicio:</label>
       <select id="claseServicio" name="claseServicio" required>
-        <option value="" disabled selected>Seleccione la clase de servicio</option>
+        <option value="" disabled selected>Seleccione</option>
         <option value="Particular">Particular</option>
         <option value="Público">Público</option>
       </select>
 
+      <label for="gravedadAccidente">Gravedad:</label>
       <select id="gravedadAccidente" name="gravedadAccidente" required>
-        <option value="" disabled selected>Seleccione gravedad</option>
+        <option value="" disabled selected>Seleccione</option>
         <option value="Con heridos">Con heridos</option>
         <option value="Con muertos">Con muertos</option>
         <option value="Solo daños">Solo daños</option>
       </select>
 
-      <input type="text" id="claseVehiculo" name="claseVehiculo" placeholder="Clase de vehículo (Carro, moto, etc)" required>
+      <label for="claseVehiculo">Clase de vehículo:</label>
+      <input type="text" id="claseVehiculo" name="claseVehiculo" required>
 
-      <!-- Campos ocultos para dirección y coordenadas -->
       <input type="hidden" id="direccionInfo" name="direccionInfo">
 
+      <label for="foto">Adjuntar foto (opcional):</label>
+      <input type="file" id="foto" name="foto" accept="image/*" multiple tabindex="0">
 
-      <input type="file" id="foto" name="foto" accept="image/*" multiple>
-
-      
-      <button type="submit" name="accion" value="reportar" class="btn-report">Reportar</button>
+      <button type="submit" name="accion" value="reportar" class="btn-report" tabindex="0">Reportar</button>
     </form>
   </main>
 
-  <!-- Script del mapa -->
+  <!-- Pie de página -->
+  <footer class="footer">
+    <p>Alert Vial © 2025 - Sistema de Reporte de Incidentes Viales</p>
+  </footer>
+
   <script src="{{ url_for('static', filename='map.js') }}"></script>
 
   <script>
-  document.getElementById('report-form').addEventListener('submit', function() {
-    // Toma el texto del div address-info
-    const addressText = document.getElementById('address-info').innerText.trim();
-    // Lo copia al input oculto
-    document.getElementById('direccionInfo').value = addressText;
+  document.getElementById('report-form').addEventListener('submit', function(event) {
+    let valid = true;
+
+    // Campos
+    const anio = document.getElementById('anio');
+    const fecha = document.getElementById('fecha');
+    const dia = document.getElementById('dia');
+    const hora = document.getElementById('hora');
+
+    // Spans de error
+    const eAnio = document.getElementById('error-anio');
+    const eFecha = document.getElementById('error-fecha');
+    const eDia = document.getElementById('error-dia');
+    const eHora = document.getElementById('error-hora');
+
+    // Validaciones comprensibles
+    if (anio.value.trim() === '') { eAnio.innerText = "Ingrese el año."; valid = false; } else { eAnio.innerText = ""; }
+    if (fecha.value.trim() === '') { eFecha.innerText = "Seleccione una fecha."; valid = false; } else { eFecha.innerText = ""; }
+    if (dia.value.trim() === '') { eDia.innerText = "Seleccione un día."; valid = false; } else { eDia.innerText = ""; }
+    if (hora.value.trim() === '') { eHora.innerText = "Ingrese una hora."; valid = false; } else { eHora.innerText = ""; }
+
+    // Copiar dirección seleccionada al input oculto
+    document.getElementById('direccionInfo').value = document.getElementById('address-info').innerText.trim();
+
+    if (!valid) event.preventDefault();
   });
-</script>
+  </script>
 
 </body>
 </html>

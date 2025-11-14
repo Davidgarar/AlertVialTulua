@@ -4,22 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alert Vial Tuluá</title>
+
+  <!-- Tu archivo CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  
 </head>
+
 <body>
-  <div class="container"> 
-    <h1>Bienvenido a Alert Vial Tuluá</h1>
-    <h2>¿Qué desea hacer?</h2>
-    <a href="{{ url_for('reportar') }}" class="btn-reportar">Reportar incidente</a>
 
-    <!-- mostrar heatmap -->
-    <a href="{{ url_for('heatmap') }}" class="btn-heatmap">Ver Heatmap</a >
+  <div class="home-container">
+    <h1 class="home-title">Alert Vial Tuluá</h1>
+    <h2 class="home-subtitle">¿Qué deseas hacer hoy?</h2>
 
-    <!-- mostrar estadísticas -->
-    <a href="/analytics" class="btn-estadisticas">Ver Estadísticas</a >
+    <div class="options-grid">
 
+      <!-- Tarjeta 1 -->
+      <a href="{{ url_for('reportar') }}" class="option-card">
+        <span class="option-icon">🚧</span>
+        <div class="option-title">Reportar incidente</div>
+        <div class="option-desc">Informa un accidente o situación vial.</div>
+      </a>
+
+      <!-- Tarjeta 2 -->
+      <a href="{{ url_for('heatmap') }}" class="option-card">
+        <span class="option-icon">🧭</span>
+        <div class="option-title">Ver Heatmap</div>
+        <div class="option-desc">Explora zonas con mayor incidencia.</div>
+      </a>
+
+      <!-- Tarjeta 3 -->
+      <a href="/analytics" class="option-card">
+        <span class="option-icon">📊</span>
+        <div class="option-title">Ver Estadísticas</div>
+        <div class="option-desc">Observa tendencias y análisis.</div>
+      </a>
+
+    </div>
   </div>
- 
+
 </body>
 </html>

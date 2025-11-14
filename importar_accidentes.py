@@ -16,7 +16,7 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
-with open(r"c:\Users\Digital\Desktop\proyecto tl\AlertVialTulua\Accidentalidad_Vehicular_en_el_Municipio_de_Tuluá_20251023.csv", 'r', encoding='utf-8') as f:
+with open("Accidentalidad_Vehicular_en_el_Municipio_de_Tuluá_20251023.csv", 'r', encoding='utf-8') as f:
 
     reader = csv.DictReader(f, delimiter=',', quotechar='"')
     count = 0

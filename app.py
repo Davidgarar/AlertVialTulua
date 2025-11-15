@@ -17,12 +17,16 @@ from werkzeug.utils import secure_filename
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1' 
 
 import psycopg2
+from flask import request, jsonify
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 app.secret_key = "secretSUPERT_key"
 procesador_riesgo = ProcesadorRiesgo()
 calculador_rutas = CalculadorRutaSegura(procesador_riesgo)
 load_dotenv()
+
+API_KEY = os.getenv("WEATHER_API_KEY") 
 
 # Conexión a PostgreSQL
 conn = psycopg2.connect(
@@ -349,31 +353,50 @@ def api_accidentes():
 
 @app.route('/api/riesgo/calcular', methods=['POST'])
 def calcular_riesgo():
-    """Calcular nivel de riesgo en un punto específico"""
+    payload = request.get_json() or {}
+    lat = payload.get('lat')
+    lng = payload.get('lng')
+    filtros = payload.get('filtros', {})
+    if lat is None or lng is None:
+        return jsonify(error="Coordenadas inválidas"), 400
+
     try:
-        data = request.get_json()
-        
-        if not data or 'lat' not in data or 'lng' not in data:
-            return jsonify({'error': 'Se requieren lat y lng'}), 400
-        
-        filtros = data.get('filtros', {})
-        
-        # Calcular riesgo usando la tabla accidentes_completa que ya tienes
-        riesgo = procesador_riesgo.calcular_riesgo_punto(
-            data['lat'], data['lng'], 'accidentes_completa', filtros, cur, conn
-        )
-        
-        return jsonify({
-            'lat': data['lat'],
-            'lng': data['lng'],
-            'nivel_riesgo': round(riesgo, 3),
-            'radio_metros': procesador_riesgo.radio_zona,
-            'filtros_aplicados': filtros
-        })
-        
-    except Exception as e:
-        print(f"Error en calcular_riesgo: {e}")
-        return jsonify({'error': str(e)}), 500
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            sql = """
+                SELECT gravedad_accidente, clase_accidente
+                FROM accidentes_completa
+                WHERE ST_DWithin(
+                    ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
+                    ST_SetSRID(ST_MakePoint(longitud, latitud), 4326)::geography,
+                    %s
+                )
+            """
+            params = [lng, lat, 2000]
+            if filtros.get('gravedad'):
+                sql += " AND gravedad_accidente = ANY(%s)"
+                params.append(filtros['gravedad'])
+            cur.execute(sql, params)
+            accidentes = cur.fetchall()
+    except psycopg2.Error as e:
+        conn.rollback()
+        print("Error en calcular_riesgo:", e)
+        return jsonify(error="No se pudo calcular el riesgo. Verifica que PostGIS esté instalado y que lat/long sean válidos."), 500
+
+    conteo = len(accidentes)
+    gravedad_puntos = sum(30 if acc['gravedad_accidente'] == 'Con muertos' else 15 for acc in accidentes)
+    nivel_accidentalidad = min(1.0, (conteo * 0.05) + (gravedad_puntos / 100))
+
+    tiempo_base = 0.3
+    clima_penalizacion = 0.2 if filtros.get('clima') == 'lluvia' else 0
+    nivel_riesgo = min(1.0, tiempo_base + clima_penalizacion + nivel_accidentalidad)
+
+    return jsonify({
+        "nivel_riesgo": nivel_riesgo,
+        "lat": lat,
+        "lng": lng,
+        "accidentes_cercanos": conteo,
+        "filtros_aplicados": filtros
+    })
 
 @app.route('/api/riesgo/mapa-calor', methods=['POST'])
 def generar_mapa_calor():
@@ -833,6 +856,23 @@ def generar_graficos_vacios():
         'por_tipo': {'labels': [], 'data': []},
         'por_zona': {'labels': [], 'data': []}
     }
+
+
+@app.route('/rutas')
+def rutas():
+    return render_template('rutas.html')
+
+@app.route('/clima')
+def clima():
+    lat = request.args.get('lat')
+    lon = request.args.get('lon')
+
+    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API_KEY}&units=metric&lang=es"
+
+    response = requests.get(url)
+    return response.json()
+
+
 # Ejecutar la aplicación
 if __name__ == '__main__':
-    app.run(debug=True)   
+    app.run(debug=True)

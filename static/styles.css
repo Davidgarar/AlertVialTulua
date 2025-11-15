@@ -203,3 +203,51 @@ h2 {
 #foto::file-selector-button:active {
   transform: scale(0.97);
 }
+
+/* ===== MAPA A PANTALLA COMPLETA ===== */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#map {
+  height: 100vh;
+  width: 100%;
+  position: relative; /* Importante para que el botón quede encima */
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+
+/* ===== BOTÓN DENTRO DEL MAPA ===== */
+#route-button {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  
+  background: #004aad;
+  color: white;
+
+  padding: 14px 22px;
+  border: none;
+  border-radius: 14px;
+
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: pointer;
+
+  z-index: 1000;
+
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: 0.25s;
+}
+
+#route-button:hover {
+  background: #003b8a;
+  transform: scale(1.05);
+}
+
+#route-button:active {
+  transform: scale(0.95);
+}

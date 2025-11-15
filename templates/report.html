@@ -7,7 +7,8 @@
 
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGuzlSWeHrkxHu1PjR_DVRTjkNkQxd2gg&libraries=places"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGuzlSWeHrkxHu1PjR_DVRTjkNkQxd2gg&libraries=visualization,places"></script>
+
 </head>
 
 <body>
@@ -28,8 +29,13 @@
   <main class="content">
     <h2>Mapa de Alert Vial</h2>
 
+    <label style="display:flex;align-items:center;gap:6px;margin:10px 0;">
+      <input type="checkbox" id="toggle-markers">
+      Mostrar marcadores de reportes
+    </label>
 
-        <!-- Barra de búsqueda -->
+
+    <!-- Barra de búsqueda -->
     <div role="search">
       <label for="search-input">Buscar dirección:</label>
       <input id="search-input" name="direccion" class="search-box" type="text" placeholder="Buscar dirección..." tabindex="0">
@@ -38,6 +44,44 @@
     <section aria-label="Mapa de ubicación">
       <div id="map"></div>
     </section>
+
+    <div id="accidente-modal" class="modal" aria-hidden="true">
+  <div class="modal-content">
+    
+    <button id="modal-close" class="modal-close">&times;</button>
+    
+    <header>
+      <h2>Reporte #<span id="modal-id">--</span></h2>
+      <p id="modal-meta" class="modal-meta">Cargando...</p>
+    </header>
+
+    <section class="modal-body">
+
+      <div class="modal-left">
+        <div id="modal-main-data"></div>
+
+        <div class="rating-section">
+          <label>Calificación:</label>
+          <div id="rating" class="rating-stars"></div>
+        </div>
+
+        <div class="note-section">
+          <label>Nota interna:</label>
+          <textarea id="nota-interna" rows="4"></textarea>
+        </div>
+
+        <button id="btn-guardar-calificacion" class="btn-primary">Guardar</button>
+      </div>
+
+      <aside class="modal-right">
+        <div id="mini-gallery" class="mini-gallery"></div>
+      </aside>
+
+    </section>
+
+  </div>
+</div>
+
 
     <label for="address-info">Dirección seleccionada:</label>
     <div id="address-info" contenteditable="true" tabindex="0">
@@ -112,36 +156,12 @@
     <p>Alert Vial © 2025 - Sistema de Reporte de Incidentes Viales</p>
   </footer>
 
+  <!-- Scripts externos -->
+  
+  
+
   <script src="{{ url_for('static', filename='map.js') }}"></script>
-
-  <script>
-  document.getElementById('report-form').addEventListener('submit', function(event) {
-    let valid = true;
-
-    // Campos
-    const anio = document.getElementById('anio');
-    const fecha = document.getElementById('fecha');
-    const dia = document.getElementById('dia');
-    const hora = document.getElementById('hora');
-
-    // Spans de error
-    const eAnio = document.getElementById('error-anio');
-    const eFecha = document.getElementById('error-fecha');
-    const eDia = document.getElementById('error-dia');
-    const eHora = document.getElementById('error-hora');
-
-    // Validaciones comprensibles
-    if (anio.value.trim() === '') { eAnio.innerText = "Ingrese el año."; valid = false; } else { eAnio.innerText = ""; }
-    if (fecha.value.trim() === '') { eFecha.innerText = "Seleccione una fecha."; valid = false; } else { eFecha.innerText = ""; }
-    if (dia.value.trim() === '') { eDia.innerText = "Seleccione un día."; valid = false; } else { eDia.innerText = ""; }
-    if (hora.value.trim() === '') { eHora.innerText = "Ingrese una hora."; valid = false; } else { eHora.innerText = ""; }
-
-    // Copiar dirección seleccionada al input oculto
-    document.getElementById('direccionInfo').value = document.getElementById('address-info').innerText.trim();
-
-    if (!valid) event.preventDefault();
-  });
-  </script>
+  <script src="{{ url_for('static', filename='validacion.js') }}"></script>
 
 </body>
 </html>

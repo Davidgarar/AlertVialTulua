@@ -1,4 +1,7 @@
 let map, marker, geocoder, autocomplete;
+let reportMarkers = [];
+let markersVisible = false;
+
 
 function initMap() {
     const defaultLocation = { lat: 4.0847, lng: -76.1954 }; // Tuluá
@@ -109,7 +112,149 @@ function initMap() {
         marker.setPosition(place.geometry.location);
         document.getElementById("address-info").innerText = place.formatted_address || place.name;
     });
+    
+
 }
+
+
+document.getElementById("toggle-markers").addEventListener("change", (e) => {
+    markersVisible = e.target.checked;
+
+    // Mostrar / ocultar marcadores existentes
+    reportMarkers.forEach(m => m.setMap(markersVisible ? map : null));
+
+    // Si se activan, recargar desde la base de datos
+    if (markersVisible) {
+        cargarMarkers();
+    }
+});
+
+
+
+let currentAccidenteId = null;
+
+// ---- Crear estrellas ----
+function createRatingStars(container, initial = 0) {
+  container.innerHTML = "";
+  for (let i = 1; i <= 5; i++) {
+    const s = document.createElement("span");
+    s.className = "star";
+    s.dataset.value = i;
+    s.textContent = "★";
+
+    if (i <= initial) {
+        s.classList.add("active");
+        container.dataset.value = initial; // <--- IMPORTANTE
+    }
+
+    s.onclick = () => {
+        for (let st of container.children) {
+            st.classList.toggle("active", Number(st.dataset.value) <= i);
+        }
+        container.dataset.value = i; // <--- GUARDA EL VALOR REAL
+    };
+
+    container.appendChild(s);
+  }
+
+}
+
+// ---- Abrir modal ----
+function openAccidenteModal(id) {
+  currentAccidenteId = id;
+  const modal = document.getElementById("accidente-modal");
+  modal.setAttribute("aria-hidden", "false");
+
+  document.getElementById("modal-id").textContent = id;
+  document.getElementById("modal-meta").textContent = "Cargando...";
+  document.getElementById("modal-main-data").innerHTML = "";
+  document.getElementById("mini-gallery").innerHTML = "";
+  createRatingStars(document.getElementById("rating"), 0);
+
+  fetch(`/api/accidente/${id}`)
+    .then(r => r.json())
+    .then(data => {
+      const meta = document.getElementById("modal-meta");
+      const fecha = data.fecha ? new Date(data.fecha).toLocaleString() : "";
+      meta.textContent = `${fecha} · ${data.barrio || ""} · ${data.gravedad || ""}`;
+
+      document.getElementById("modal-main-data").innerHTML = `
+        <p><strong>Área:</strong> ${data.area || "-"}</p>
+        <p><strong>Dirección:</strong> ${data.direccion || "-"}</p>
+        <p><strong>Clase:</strong> ${data.clase_accidente || "-"}</p>
+        <p><strong>Servicio:</strong> ${data.clase_servicio || "-"}</p>
+        <p><strong>Vehículo:</strong> ${data.clase_vehiculo || "-"}</p>
+      `;
+
+      // rating previo
+      createRatingStars(document.getElementById("rating"), data.rating || 0);
+      if (data.nota_interna)
+        document.getElementById("nota-interna").value = data.nota_interna;
+
+      // galería
+      const g = document.getElementById("mini-gallery");
+      if (data.fotos.length) {
+        data.fotos.forEach(fn => {
+          const img = document.createElement("img");
+          img.src = `/static/img/${fn}`;
+          img.onclick = () => window.open(img.src, "_blank");
+          g.appendChild(img);
+        });
+      } else {
+        g.innerHTML = "<p>No hay fotos.</p>";
+      }
+    });
+}
+
+// ---- Cerrar ----
+document.getElementById("modal-close").onclick = () => {
+  document.getElementById("accidente-modal")
+    .setAttribute("aria-hidden", "true");
+};
+
+// ---- Guardar calificación ----
+document.getElementById("btn-guardar-calificacion").onclick = () => {
+  const rating = Number(document.getElementById("rating").dataset.value || 0);
+  const nota = document.getElementById("nota-interna").value;
+
+  fetch(`/api/accidente/${currentAccidenteId}/calificar`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ rating, nota })
+  }).then(r => r.json()).then(res => {
+    if (res.ok) {
+      alert("Guardado");
+      document.getElementById("accidente-modal")
+        .setAttribute("aria-hidden", "true");
+    }
+  });
+};
+
+// ---- Cargar markers ----
+function cargarMarkers() {
+  // Borrar marcadores previos
+  reportMarkers.forEach(m => m.setMap(null));
+  reportMarkers = [];
+
+  fetch("/api/accidentes_all")
+    .then(r => r.json())
+    .then(data => {
+      data.accidentes.forEach(a => {
+        const m = new google.maps.Marker({
+          position: { lat: a.lat, lng: a.lng },
+          title: "Reporte #" + a.id,
+          map: markersVisible ? map : null   // <--- SOLO si está activado
+        });
+
+        m.addListener("click", () => openAccidenteModal(a.id));
+
+        reportMarkers.push(m);
+      });
+    });
+}
+
+
+
 
 function handleLocationError(browserHasGeolocation, pos) {
     console.log(browserHasGeolocation ?

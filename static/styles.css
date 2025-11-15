@@ -251,3 +251,79 @@ html, body {
 #route-button:active {
   transform: scale(0.95);
 }
+
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,.45);
+  opacity: 0;
+  visibility: hidden;
+  transition: .2s;
+  z-index: 9000;
+}
+
+.modal[aria-hidden="false"] {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  width: min(900px, 95%);
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 16px;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  font-size: 26px;
+  cursor: pointer;
+}
+
+.modal-meta {
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.mini-gallery img {
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+
+.rating-stars .star {
+  font-size: 24px;
+  cursor: pointer;
+  opacity: .4;
+}
+
+.rating-stars .star.active {
+  color: #ffb400;
+  opacity: 1;
+}
+
+.btn-primary {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #0b70d1;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+}
+

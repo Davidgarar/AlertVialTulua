@@ -169,6 +169,123 @@ def reportar():
     return render_template('report.html')
 
 
+
+# --- ENDPOINT: lista completa de accidentes ---
+@app.route('/api/accidentes_all')
+def api_accidentes_all():
+    try:
+        with conn.cursor() as c:
+            c.execute("""
+                SELECT id, ano, fecha, barrio_hecho, clase_accidente, gravedad_accidente,
+                       latitud, longitud, direccion_hecho, area
+                FROM accidentes_completa
+                WHERE latitud IS NOT NULL AND longitud IS NOT NULL
+            """)
+            rows = c.fetchall()
+
+        out = []
+        for r in rows:
+            out.append({
+                'id': r[0],
+                'ano': r[1],
+                'fecha': r[2].isoformat() if r[2] else None,
+                'barrio': r[3],
+                'clase_accidente': r[4],
+                'gravedad': r[5],
+                'lat': float(r[6]),
+                'lng': float(r[7]),
+                'direccion': r[8],
+                'area': r[9]
+            })
+
+        return jsonify({'accidentes': out})
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 500
+
+
+
+# --- ENDPOINT: detalle de un accidente ---
+@app.route('/api/accidente/<int:accidente_id>')
+def api_accidente_detalle(accidente_id):
+    try:
+        with conn.cursor() as c:
+            c.execute("""
+                SELECT id, ano, fecha, dia, hora, area, direccion_hecho,
+                       barrio_hecho, clase_accidente, clase_servicio,
+                       gravedad_accidente, clase_vehiculo, latitud, longitud
+                FROM accidentes_completa
+                WHERE id = %s
+            """, (accidente_id,))
+            row = c.fetchone()
+
+            if not row:
+                return jsonify({'error': 'No encontrado'}), 404
+
+            data = {
+                'id': row[0],
+                'ano': row[1],
+                'fecha': row[2].isoformat() if row[2] else None,
+                'dia': row[3],
+                'hora': row[4],
+                'area': row[5],
+                'direccion': row[6],
+                'barrio': row[7],
+                'clase_accidente': row[8],
+                'clase_servicio': row[9],
+                'gravedad': row[10],
+                'clase_vehiculo': row[11],
+                'lat': float(row[12]),
+                'lng': float(row[13])
+            }
+
+            # fotos
+            c.execute("SELECT nombre_archivo FROM accidentes_fotos WHERE accidente_id = %s", (accidente_id,))
+            data['fotos'] = [f[0] for f in c.fetchall()]
+
+            # rating + nota
+            c.execute("""
+                SELECT rating, nota_interna
+                FROM accidente_reviews
+                WHERE accidente_id = %s
+                ORDER BY actualizado_en DESC
+                LIMIT 1
+            """, (accidente_id,))
+            r = c.fetchone()
+            data['rating'] = r[0] if r else None
+            data['nota_interna'] = r[1] if r else None
+
+        return jsonify(data)
+
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 500
+
+
+
+# --- ENDPOINT: guardar calificación y nota ---
+@app.route('/api/accidente/<int:accidente_id>/calificar', methods=['POST'])
+def api_accidente_calificar(accidente_id):
+    try:
+        data = request.get_json()
+        rating = data.get('rating')
+        nota = data.get('nota', '')
+
+        with conn.cursor() as c:
+            c.execute("""
+                INSERT INTO accidente_reviews (accidente_id, rating, nota_interna)
+                VALUES (%s, %s, %s)
+            """, (accidente_id, rating, nota))
+
+        conn.commit()
+        return jsonify({'ok': True})
+
+    except Exception as e:
+        conn.rollback()
+        print(e)
+        return jsonify({'error': str(e)}), 500
+
+
 UPLOAD_FOLDER = 'static/img'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 @app.route('/procesar', methods=['POST'])
@@ -869,7 +986,7 @@ def clima():
 
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API_KEY}&units=metric&lang=es"
 
-    response = requests.get(url)
+    response = request.get(url)
     return response.json()
 
 

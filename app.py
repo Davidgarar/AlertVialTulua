@@ -5,7 +5,7 @@ from security import encrypt_password, verify_password
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from geopy.geocoders import Nominatim
-# AGREGAR ESTOS IMPORTS DESPUÉS DE LOS EXISTENTES
+import requests
 from data_filters import FiltroAccidentes
 from risk_processor import ProcesadorRiesgo
 from route_calculator import CalculadorRutaSegura

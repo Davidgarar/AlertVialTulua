@@ -19,6 +19,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 import psycopg2
 from flask import request, jsonify
 from psycopg2.extras import RealDictCursor
+import math  # <-- nuevo
 
 app = Flask(__name__)
 app.secret_key = "secretSUPERT_key"
@@ -468,6 +469,68 @@ def api_accidentes():
 # NUEVAS RUTAS PARA PROCESAMIENTO DE RIESGO - SIN AFECTAR EXISTENTES
 # =================================================================
 
+def _accidentalidad_en_radio(lat, lng, cursor, filtros, radio_m=300):
+    lat = float(lat)
+    lng = float(lng)
+    radio_m = float(radio_m or 300)
+
+    delta_lat = radio_m / 111_320  # grados
+    delta_lng = radio_m / (111_320 * max(math.cos(math.radians(lat)), 0.0001))
+
+    sql = """
+        SELECT latitud, longitud, gravedad_accidente, hora, clase_accidente
+        FROM accidentes_completa
+        WHERE latitud IS NOT NULL AND longitud IS NOT NULL
+          AND latitud BETWEEN %s AND %s
+          AND longitud BETWEEN %s AND %s
+    """
+    params = [lat - delta_lat, lat + delta_lat, lng - delta_lng, lng + delta_lng]
+
+    if filtros.get('gravedad'):
+        sql += " AND gravedad_accidente = ANY(%s)"
+        params.append(filtros['gravedad'])
+    if filtros.get('ano'):
+        sql += " AND ano = ANY(%s)"
+        params.append(filtros['ano'])
+    if filtros.get('hora'):
+        rango = filtros['hora']
+        if isinstance(rango, (list, tuple)) and len(rango) == 2:
+            sql += " AND hora BETWEEN %s AND %s"
+            params.extend(rango)
+
+    cursor.execute(sql, params)
+    accidentes = cursor.fetchall()
+
+    conteo = 0
+    puntaje = 0.0
+
+    for acc in accidentes:
+        acc_lat = float(acc['latitud'])
+        acc_lng = float(acc['longitud'])
+        dist = procesador_riesgo.calcular_distancia(lat, lng, acc_lat, acc_lng)
+        if dist > radio_m:
+            continue
+
+        conteo += 1
+        gravedad = (acc['gravedad_accidente'] or '').lower()
+        peso = 1.0
+        if 'muert' in gravedad:
+            peso = 3.0
+        elif 'herid' in gravedad:
+            peso = 2.0
+
+        puntaje += peso * (1 - dist / radio_m)
+
+    if conteo == 0:
+        return {'indice': 0.05, 'conteo': 0}  # leve riesgo base
+
+    # Escalas más suaves: más accidentes = más riesgo, pero sin saturar
+    densidad = 1 - math.exp(-conteo / 12.0)            # cantidad de accidentes
+    severidad_prom = min(1.0, (puntaje / max(conteo, 1)) / 5.0)
+    indice = round(min(1.0, (densidad * 0.6) + (severidad_prom * 0.4)), 3)
+
+    return {'indice': indice, 'conteo': conteo}
+
 @app.route('/api/riesgo/calcular', methods=['POST'])
 def calcular_riesgo():
     payload = request.get_json() or {}
@@ -479,39 +542,23 @@ def calcular_riesgo():
 
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            sql = """
-                SELECT gravedad_accidente, clase_accidente
-                FROM accidentes_completa
-                WHERE ST_DWithin(
-                    ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography,
-                    ST_SetSRID(ST_MakePoint(longitud, latitud), 4326)::geography,
-                    %s
-                )
-            """
-            params = [lng, lat, 2000]
-            if filtros.get('gravedad'):
-                sql += " AND gravedad_accidente = ANY(%s)"
-                params.append(filtros['gravedad'])
-            cur.execute(sql, params)
-            accidentes = cur.fetchall()
+            stats = _accidentalidad_en_radio(lat, lng, cur, filtros, radio_m=filtros.get('radio', 300))
     except psycopg2.Error as e:
         conn.rollback()
         print("Error en calcular_riesgo:", e)
-        return jsonify(error="No se pudo calcular el riesgo. Verifica que PostGIS esté instalado y que lat/long sean válidos."), 500
+        return jsonify(error="No se pudo calcular el riesgo (consulta a BD)."), 500
 
-    conteo = len(accidentes)
-    gravedad_puntos = sum(30 if acc['gravedad_accidente'] == 'Con muertos' else 15 for acc in accidentes)
-    nivel_accidentalidad = min(1.0, (conteo * 0.05) + (gravedad_puntos / 100))
-
-    tiempo_base = 0.3
-    clima_penalizacion = 0.2 if filtros.get('clima') == 'lluvia' else 0
-    nivel_riesgo = min(1.0, tiempo_base + clima_penalizacion + nivel_accidentalidad)
+    accidentes_cercanos = stats['conteo']
+    nivel_accidentalidad = stats['indice']
+    clima_penalizacion = min(0.2, filtros.get('clima_penalizacion', 0.0))
+    nivel_riesgo = min(1.0, max(0.05, nivel_accidentalidad + clima_penalizacion))
 
     return jsonify({
         "nivel_riesgo": nivel_riesgo,
-        "lat": lat,
-        "lng": lng,
-        "accidentes_cercanos": conteo,
+        "indice_accidentalidad": nivel_accidentalidad,
+        "accidentes_cercanos": accidentes_cercanos,
+        "lat": float(lat),
+        "lng": float(lng),
         "filtros_aplicados": filtros
     })
 
@@ -872,7 +919,7 @@ def calcular_estadisticas(datos):
         
         for zona, cantidad in zonas_ordenadas:
             if (zona and 
-                str(zona).strip() != '' and 
+                str(zona).strip() != '' and
                 str(zona).upper() not in ['NO INFORMA', 'NO INFORMA', 'NONE', 'NULL', '', 'NO INFORMADO'] and
                 not str(zona).startswith('No informa')):
                 
@@ -986,7 +1033,7 @@ def clima():
 
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API_KEY}&units=metric&lang=es"
 
-    response = request.get(url)
+    response = requests.get(url)
     return response.json()
 
 

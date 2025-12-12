@@ -3,29 +3,47 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Alert Vial</title>
+  <title>Alert Vial - Reportar</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBGuzlSWeHrkxHu1PjR_DVRTjkNkQxd2gg&libraries=visualization,places"></script>
 
+  <style>
+    /* Estilos rápidos para las alertas si no quieres editar el CSS ahora */
+    .flash-message {
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 500;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .flash-error { background-color: #e74c3c; border-left: 5px solid #c0392b; }
+    .flash-success { background-color: #2ecc71; border-left: 5px solid #27ae60; }
+    .flash-warning { background-color: #f1c40f; color: #333; border-left: 5px solid #f39c12; }
+    .flash-info { background-color: #3498db; border-left: 5px solid #2980b9; }
+  </style>
 </head>
 
 <body>
 
-  <!-- Encabezado -->
   <header class="topbar">
     <div class="left-section">
       <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo de Alert Vial" class="logo">
       <h1 class="title">Reporte</h1>
     </div>
 
-    <nav class="nav-links" aria-label="Menú principal">
+    <nav class="nav-links" aria-label="Menú principal" style="display: flex; align-items: center;">
+      <a href="/alertv" style="color: white; text-decoration: none; font-size: 0.9rem; border: 1px solid white; padding: 6px 12px; border-radius: 5px; margin-right: 15px; transition: background 0.2s;">
+        ⬅ Volver al Menú
+      </a>
+      
       <a href="/logout" class="logout-link" tabindex="0">Cerrar sesión</a>
     </nav>
   </header>
 
-  <!-- Contenido principal -->
   <main class="content">
     <h2>Mapa de Alert Vial</h2>
 
@@ -34,8 +52,6 @@
       Mostrar marcadores de reportes
     </label>
 
-
-    <!-- Barra de búsqueda -->
     <div role="search">
       <label for="search-input">Buscar dirección:</label>
       <input id="search-input" name="direccion" class="search-box" type="text" placeholder="Buscar dirección..." tabindex="0">
@@ -46,48 +62,55 @@
     </section>
 
     <div id="accidente-modal" class="modal" aria-hidden="true">
-  <div class="modal-content">
-    
-    <button id="modal-close" class="modal-close">&times;</button>
-    
-    <header>
-      <h2>Reporte #<span id="modal-id">--</span></h2>
-      <p id="modal-meta" class="modal-meta">Cargando...</p>
-    </header>
+      <div class="modal-content">
+        
+        <button id="modal-close" class="modal-close">&times;</button>
+        
+        <header>
+          <h2>Reporte #<span id="modal-id">--</span></h2>
+          <p id="modal-meta" class="modal-meta">Cargando...</p>
+        </header>
 
-    <section class="modal-body">
+        <section class="modal-body">
+          <div class="modal-left">
+            <div id="modal-main-data"></div>
 
-      <div class="modal-left">
-        <div id="modal-main-data"></div>
+            <div class="rating-section">
+              <label>Calificación:</label>
+              <div id="rating" class="rating-stars"></div>
+            </div>
 
-        <div class="rating-section">
-          <label>Calificación:</label>
-          <div id="rating" class="rating-stars"></div>
-        </div>
+            <div class="note-section">
+              <label>Nota interna:</label>
+              <textarea id="nota-interna" rows="4"></textarea>
+            </div>
 
-        <div class="note-section">
-          <label>Nota interna:</label>
-          <textarea id="nota-interna" rows="4"></textarea>
-        </div>
+            <button id="btn-guardar-calificacion" class="btn-primary">Guardar</button>
+          </div>
 
-        <button id="btn-guardar-calificacion" class="btn-primary">Guardar</button>
+          <aside class="modal-right">
+            <div id="mini-gallery" class="mini-gallery"></div>
+          </aside>
+        </section>
       </div>
-
-      <aside class="modal-right">
-        <div id="mini-gallery" class="mini-gallery"></div>
-      </aside>
-
-    </section>
-
-  </div>
-</div>
-
+    </div>
 
     <label for="address-info">Dirección seleccionada:</label>
     <div id="address-info" contenteditable="true" tabindex="0">
       Selecciona una ubicación o busca una dirección.
     </div>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
     <form id="report-form" action="/procesar" method="POST" enctype="multipart/form-data">
 
       <label for="anio">Año:</label>
@@ -140,25 +163,21 @@
       </select>
 
       <label for="claseVehiculo">Clase de vehículo:</label>
-      <input type="text" id="claseVehiculo" name="claseVehiculo" required>
+      <input type="text" id="claseVehiculo" name="claseVehiculo" placeholder="Ej: Automóvil, Motocicleta" required>
 
       <input type="hidden" id="direccionInfo" name="direccionInfo">
 
-      <label for="foto">Adjuntar foto (opcional):</label>
-      <input type="file" id="foto" name="foto" accept="image/*" multiple tabindex="0">
+      <label for="foto" style="margin-top: 20px; font-weight: bold; display: block;">Adjuntar foto (Requerido para validación IA):</label>
+      <input type="file" id="foto" name="foto" accept="image/*" required tabindex="0">
+      <small style="color: #666; display: block; margin-bottom: 15px;">La IA analizará esta imagen para verificar su autenticidad.</small>
 
-      <button type="submit" name="accion" value="reportar" class="btn-report" tabindex="0">Reportar</button>
+      <button type="submit" name="accion" value="reportar" class="btn-report" tabindex="0">Reportar Accidente</button>
     </form>
   </main>
 
-  <!-- Pie de página -->
   <footer class="footer">
     <p>Alert Vial © 2025 - Sistema de Reporte de Incidentes Viales</p>
   </footer>
-
-  <!-- Scripts externos -->
-  
-  
 
   <script src="{{ url_for('static', filename='map.js') }}"></script>
   <script src="{{ url_for('static', filename='validacion.js') }}"></script>

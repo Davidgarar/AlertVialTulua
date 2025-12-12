@@ -5,8 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Alert Vial Tuluá</title>
 
-  <!-- Tu archivo CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    /* Ajuste rápido para que las 3 tarjetas queden centradas y bonitas */
+    .options-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+    
+    .option-card {
+      flex: 1 1 300px; /* Crecen para llenar espacio, base 300px */
+      max-width: 350px;
+      text-decoration: none;
+      color: inherit;
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .option-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+  </style>
 </head>
 
 <body>
@@ -17,33 +48,28 @@
 
     <div class="options-grid">
 
-      <!-- Tarjeta 1 -->
       <a href="{{ url_for('reportar') }}" class="option-card">
-        <span class="option-icon">🚧</span>
-        <div class="option-title">Reportar incidente</div>
-        <div class="option-desc">Informa un accidente o situación vial.</div>
+        <span class="option-icon" style="font-size: 3rem; margin-bottom: 15px;">🚧</span>
+        <div class="option-title" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">Reportar incidente</div>
+        <div class="option-desc" style="color: #666;">Informa un accidente o situación vial.</div>
       </a>
 
-      <!-- Tarjeta 2 -->
       <a href="{{ url_for('heatmap') }}" class="option-card">
-        <span class="option-icon">🚨</span>
-        <div class="option-title">Ver Heatmap</div>
-        <div class="option-desc">Explora zonas con mayor incidencia.</div>
+        <span class="option-icon" style="font-size: 3rem; margin-bottom: 15px;">🚨</span>
+        <div class="option-title" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">Mapa & Rutas</div>
+        <div class="option-desc" style="color: #666;">Zonas de riesgo y cálculo de rutas seguras.</div>
       </a>
 
-      <!-- Tarjeta 3 -->
       <a href="/analytics" class="option-card">
-        <span class="option-icon">📊</span>
-        <div class="option-title">Ver Estadísticas</div>
-        <div class="option-desc">Observa tendencias y análisis.</div>
+        <span class="option-icon" style="font-size: 3rem; margin-bottom: 15px;">📊</span>
+        <div class="option-title" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 10px;">Ver Estadísticas</div>
+        <div class="option-desc" style="color: #666;">Observa tendencias y análisis de datos.</div>
       </a>
 
-      <a href="/rutas" class="option-card">
-        <span class="option-icon">🧭</span>
-        <div class="option-title">Rutas </div>
-        <div class="option-desc">Ver las rutas seguras</div>
-      </a>
-
+    </div>
+    
+    <div style="text-align: center; margin-top: 40px;">
+        <a href="/logout" style="color: white; text-decoration: none; border: 1px solid rgba(255,255,255,0.5); padding: 10px 20px; border-radius: 20px;">Cerrar Sesión</a>
     </div>
   </div>
 

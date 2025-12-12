@@ -1,5 +1,5 @@
 // -------------------------
-// VALIDACIÓN DEL FORMULARIO
+// VALIDACIÓN DEL FORMULARIO (MEJORADO)
 // -------------------------
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const fecha = document.getElementById('fecha');
     const dia = document.getElementById('dia');
     const hora = document.getElementById('hora');
+    const foto = document.getElementById('foto'); // <--- NUEVO
 
     // Spans de error
     const eAnio = document.getElementById('error-anio');
@@ -42,9 +43,21 @@ document.addEventListener("DOMContentLoaded", () => {
       valid = false;
     } else eHora.innerText = "";
 
+    // --- NUEVA VALIDACIÓN DE FOTO ---
+    if (foto.files.length === 0) {
+      alert("⚠️ Debes adjuntar una foto obligatoriamente para la validación con IA.");
+      valid = false;
+    }
+
     // Copiar dirección al input oculto
-    document.getElementById('direccionInfo').value =
-      document.getElementById('address-info').innerText.trim();
+    // Aseguramos que si address-info está vacío, no mande basura
+    const direccionTexto = document.getElementById('address-info').innerText.trim();
+    document.getElementById('direccionInfo').value = direccionTexto;
+
+    if (direccionTexto === "Selecciona una ubicación o busca una dirección." || direccionTexto === "") {
+        alert("Por favor selecciona una ubicación en el mapa.");
+        valid = false;
+    }
 
     if (!valid) event.preventDefault();
   });

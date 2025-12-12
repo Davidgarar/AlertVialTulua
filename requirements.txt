@@ -1,0 +1,9 @@
+Flask
+Flask-Dance
+python-dotenv
+Flask-Mail
+geopy
+requests
+psycopg2-binary
+dotenv
+google-generativeai
